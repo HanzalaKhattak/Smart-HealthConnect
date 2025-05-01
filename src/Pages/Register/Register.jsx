@@ -14,7 +14,7 @@ const Register = () => {
 
     const LoginPage = useNavigate();
     const handleClick = () => {
-      LoginPage('/login');
+      LoginPage('./login');
     }
     
     // regex for username validation

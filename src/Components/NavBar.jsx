@@ -13,6 +13,7 @@ const NavBar = () => {
             <li><Link to="/">Home</Link></li>
             <li><Link to="/about">About</Link></li>
             <li><button className='bg-green-500 rounded py-1 px-3 text-white'><Link to="/register">Register </Link></button></li>
+            <li><button className='bg-green-500 rounded py-1 px-3 text-white'><Link to='/login'>Login</Link></button></li>
         </ul>
         </section>
       </nav>

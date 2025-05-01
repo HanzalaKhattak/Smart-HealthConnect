@@ -1,5 +1,5 @@
 import { useState } from "react";
-import InputField from "../Pages/Register/InputComponent/InputField";
+import InputField from "../Register/InputComponent/InputField";
 
 const Login = () => {
 
@@ -29,7 +29,7 @@ const Login = () => {
       <>
       <div className='flex flex-col gap-10 justify-center items-center h-screen bg-gray-200'>
         <form className='flex flex-col border p-10 items-center w-100'>
-          <h1 className='font-bold text-4xl pb-4'>Sign Up</h1>
+          <h1 className='font-bold text-4xl pb-4'>Login</h1>
           {/* Password */}
           <InputField label = {"Email "} setValue={setEmail} errorMessage={ emailError} type={"email"}/>
             {/* Passeord  */}
