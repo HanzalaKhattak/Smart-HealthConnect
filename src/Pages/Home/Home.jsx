@@ -16,8 +16,10 @@ const Home = () => {
               <img src={img1} alt="Female Doc" className='h-92' />
             </section>
       </section>
+      <span className='flex items-center justify-evenly mt-8'>
       <AIAgent />
       <BookAppointment />
+      </span>
     </>
   )
 }
