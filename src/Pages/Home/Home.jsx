@@ -4,6 +4,7 @@ import AIAgent from '../../Components/AIAgent'
 import BookAppointment from '../../Components/BookAppointment'
 import HospNearYou from '../../Components/HospNearYou'
 import ShowCard from '../../Components/Specialization Cards/ShowCard'
+import PharmasNearYou from '../../Components/PharmasNearYou'
 
 const Home = () => {
   return (
@@ -24,6 +25,7 @@ const Home = () => {
       </span>
       <HospNearYou />
       <ShowCard />
+      <PharmasNearYou/>
     </>
   )
 }
