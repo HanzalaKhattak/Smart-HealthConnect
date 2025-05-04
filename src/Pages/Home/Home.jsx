@@ -5,10 +5,20 @@ import BookAppointment from '../../Components/BookAppointment'
 import HospNearYou from '../../Components/HospNearYou'
 import ShowCard from '../../Components/Specialization Cards/ShowCard'
 import PharmasNearYou from '../../Components/PharmasNearYou'
+import Footer from '../../Components/Footer'
+import UserDashboard from '../UserDashboard/UserDashboard'
+import DoctorDashboard from '../DoctorDashboard/DoctorDashboard'
+import HospitalAdmin from '../HospitalAdmin/HospitalAdmin'
+import SystemAdminDashboard from '../SystemAdminDashboard/SystemAdminDashboard'
 
 const Home = () => {
   return (
     <>
+    {/* <UserDashboard/> */}
+    {/* <DoctorDashboard/> */}
+    {/* <HospitalAdmin/> */}
+    {/* <SystemAdminDashboard/> */}
+
       <section className='bg-red-50 h-96 flex justify-evenly border-3 rounded-xl border-green-500 shadow-md mt-5'>
             <section className='flex flex-col items-center justify-center '>
               <p className='text-8xl'>We <span className='text-green-600'>Care</span> about</p>
@@ -26,6 +36,7 @@ const Home = () => {
       <HospNearYou />
       <ShowCard />
       <PharmasNearYou/>
+      <Footer/>
     </>
   )
 }

@@ -6,7 +6,7 @@ const NavBar = () => {
     <>
       <nav className='flex justify-between items-center bg-gray-100 pt-4 py-4 px-5'>
         <section>
-            <h1 className='text-4xl'>SHC</h1>
+        <h1 className="text-3xl font-bold text-green-600">Smart HealthConnect</h1>
         </section>
         <section>
         <ul className='flex gap-4'>
