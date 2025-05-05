@@ -2,9 +2,9 @@ import React from 'react'
 import img1 from '../Home/HomeAssets/mandf.png'
 import AIAgent from '../../Components/AIAgent'
 import BookAppointment from '../../Components/BookAppointment'
-import HospNearYou from '../../Components/HospNearYou'
+import HospNearYou from '../../Components/HospitalNearYou/HospNearYou'
 import ShowCard from '../../Components/Specialization Cards/ShowCard'
-import PharmasNearYou from '../../Components/PharmasNearYou'
+import PharmasNearYou from '../../Components/PharmasNearYou/PharmasNearYou'
 import Footer from '../../Components/Footer'
 import UserDashboard from '../UserDashboard/UserDashboard'
 import DoctorDashboard from '../DoctorDashboard/DoctorDashboard'
@@ -34,9 +34,8 @@ const Home = () => {
         <BookAppointment />
       </span>
       <HospNearYou />
-      <ShowCard />
       <PharmasNearYou/>
-      <Footer/>
+      <ShowCard />
     </>
   )
 }

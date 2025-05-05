@@ -1,10 +1,16 @@
 import React from 'react'
-import pharmaIcon from '../Assets/PharmaNearYouAssets/pharmacyIcon.png'
+import pharmaIcon from '../../Assets/PharmaNearYouAssets/pharmacyIcon.png'
+import { useNavigate } from 'react-router-dom'
 
-const PharmasNearYou = () => {
+  const PharmasNearYou = () => {
+    const navigate = useNavigate();
+  
+    const handleClick = () => {
+      navigate('/nearby');
+    };
   return (
     <>
-        <div className='flex items-center flex-col justify-center'>
+        <div className='flex items-center flex-col justify-center mt-8' onClick={handleClick}>
                 <div className='flex justify-evenly items-center w-auto border-3 rounded-xl border-green-500 px-8'>
                   <div>
                   <p className='text-2xl'> <b className='font-bold text-3xl'>Search</b> pharmacies nearest to you.</p>
