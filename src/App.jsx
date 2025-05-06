@@ -10,6 +10,8 @@ import PharmasNearYou from "./Components/PharmasNearYou/PharmasNearYou"
 import NearbyPharmas from "./Components/PharmasNearYou/NearbyPharmas"
 import HospNearYou from "./Components/HospitalNearYou/HospNearYou"
 import NearbyHospitals from "./Components/HospitalNearYou/NearbyHospitals"
+import AIAgent from "./Components/AIAgent/AIAgent"
+import AiConsultant from "./Components/AIAgent/AiConsultant"
 
 function App() {
   return(
@@ -29,7 +31,9 @@ function App() {
           <Route path='/hospital-near-you' element={<HospNearYou />} />
           <Route path='/nearby-hospitals' element={<NearbyHospitals />} />
           <Route path="/" element={<DocCards />} />
-        <Route path="/doctors/:specialization" element={<Doctors />} />
+          <Route path='/' element={<AIAgent />} />
+          <Route path='/AiConsultant' element={<AiConsultant />} />
+          <Route path="/doctors/:specialization" element={<Doctors />} />
         </Route>
       </Routes>
     </BrowserRouter>

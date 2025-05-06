@@ -1,6 +1,6 @@
 import React from 'react'
 import img1 from '../Home/HomeAssets/mandf.png'
-import AIAgent from '../../Components/AIAgent'
+import AIAgent from '../../Components/AIAgent/AIAgent'
 import BookAppointment from '../../Components/BookAppointment'
 import HospNearYou from '../../Components/HospitalNearYou/HospNearYou'
 import ShowCard from '../../Components/Specialization Cards/ShowCard'
