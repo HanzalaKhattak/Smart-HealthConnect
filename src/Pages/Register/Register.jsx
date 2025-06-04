@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
 import { FaUser, FaUserMd, FaHospital, FaTools } from 'react-icons/fa';
+import { Add_User, Register_Doctor } from '../../Components/apis/apisUrl';
+import { Add_User_EndPoint, Register_Doctor_Endpoint } from '../../Components/apis/endpoints';
+
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const RegisterForm = () => {
+  const Nav = useNavigate();
   const [userType, setUserType] = useState('');
   const [formData, setFormData] = useState({});
+  
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -12,14 +19,46 @@ const RegisterForm = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Registration data:', { userType, ...formData });
-    // Handle form submission logic here
+    // Submit form data to the backend here
+    const newUserData = { userType, ...formData };
+    console.log("newUser", newUserData)
+    const UrI = Add_User + Add_User_EndPoint;
+    console.log("urk", UrI);
+    axios.post(UrI, newUserData)
+    .then((res)=>{
+      console.log(res);
+      Nav('/')
+    }).catch((err)=>{console.log(err)});
+
   };
+
 
   const commonFields = (
     <>
-      <input type="text" name="name" placeholder="Full Name" onChange={handleChange} className="input" required />
-      <input type="email" name="email" placeholder="Email" onChange={handleChange} className="input" required />
-      <input type="password" name="password" placeholder="Password" onChange={handleChange} className="input" required />
+      <input
+        type="text"
+        name="username"
+        placeholder="Full Name"
+        onChange={handleChange}
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+        required
+      />
+      <input
+        type="email"
+        name="email"
+        placeholder="Email"
+        onChange={handleChange}
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+        required
+      />
+      <input
+        type="password"
+        name="password"
+        placeholder="Password"
+        onChange={handleChange}
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+        required
+      />
     </>
   );
 
@@ -28,21 +67,56 @@ const RegisterForm = () => {
       case 'doctor':
         return (
           <>
-            <input type="text" name="specialization" placeholder="Specialization" onChange={handleChange} className="input" required />
-            <input type="text" name="license" placeholder="Medical License Number" onChange={handleChange} className="input" required />
+            <input
+              type="text"
+              name="specialization"
+              placeholder="Specialization"
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              required
+            />
+            <input
+              type="text"
+              name="license"
+              placeholder="Medical License Number"
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              required
+            />
           </>
         );
       case 'hospitalAdmin':
         return (
           <>
-            <input type="text" name="hospitalName" placeholder="Hospital Name" onChange={handleChange} className="input" required />
-            <input type="text" name="hospitalID" placeholder="Hospital ID" onChange={handleChange} className="input" required />
+            <input
+              type="text"
+              name="hospitalName"
+              placeholder="Hospital Name"
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              required
+            />
+            <input
+              type="text"
+              name="hospitalID"
+              placeholder="Hospital ID"
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              required
+            />
           </>
         );
       case 'systemAdmin':
         return (
           <>
-            <input type="text" name="adminCode" placeholder="System Admin Code" onChange={handleChange} className="input" required />
+            <input
+              type="text"
+              name="adminCode"
+              placeholder="System Admin Code"
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              required
+            />
           </>
         );
       default:
@@ -53,18 +127,67 @@ const RegisterForm = () => {
   return (
     <div className="max-w-xl mx-auto p-8 mt-10 bg-white shadow-lg rounded-xl">
       <h2 className="text-2xl font-bold text-center mb-6">Register as</h2>
-      <div className="flex justify-around mb-6">
-        <button onClick={() => setUserType('patient')} className={`btn ${userType === 'patient' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}><FaUser className="inline mr-2" /> Patient</button>
-        <button onClick={() => setUserType('doctor')} className={`btn ${userType === 'doctor' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}><FaUserMd className="inline mr-2" /> Doctor</button>
-        <button onClick={() => setUserType('hospitalAdmin')} className={`btn ${userType === 'hospitalAdmin' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}><FaHospital className="inline mr-2" /> Hospital Admin</button>
-        <button onClick={() => setUserType('systemAdmin')} className={`btn ${userType === 'systemAdmin' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}><FaTools className="inline mr-2" /> System Admin</button>
+
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <button
+          type="button"
+          onClick={() => setUserType('patient')}
+          className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border ${
+            userType === 'patient'
+              ? 'bg-green-600 text-white'
+              : 'bg-gray-100 text-gray-800'
+          }`}
+        >
+          <FaUser /> Patient
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setUserType('doctor')}
+          className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border ${
+            userType === 'doctor'
+              ? 'bg-green-600 text-white'
+              : 'bg-gray-100 text-gray-800'
+          }`}
+        >
+          <FaUserMd /> Doctor
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setUserType('hospitalAdmin')}
+          className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border ${
+            userType === 'hospitalAdmin'
+              ? 'bg-green-600 text-white'
+              : 'bg-gray-100 text-gray-800'
+          }`}
+        >
+          <FaHospital /> Hospital Admin
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setUserType('systemAdmin')}
+          className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border ${
+            userType === 'systemAdmin'
+              ? 'bg-green-600 text-white'
+              : 'bg-gray-100 text-gray-800'
+          }`}
+        >
+          <FaTools /> System Admin
+        </button>
       </div>
 
       {userType && (
         <form onSubmit={handleSubmit} className="space-y-4">
           {commonFields}
           {renderAdditionalFields()}
-          <button type="submit" className="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Register</button>
+          <button
+            type="submit"
+            className="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-200"
+          >
+            Register
+          </button>
         </form>
       )}
     </div>
@@ -72,9 +195,3 @@ const RegisterForm = () => {
 };
 
 export default RegisterForm;
-
-/* Tailwind Utility Class Helpers */
-/* You can also move these to your CSS if needed */
-/* .input and .btn are just shortcuts */
-// .input: w-full p-2 border rounded
-// .btn: px-3 py-2 rounded shadow hover:shadow-md transition

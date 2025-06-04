@@ -35,6 +35,7 @@ const AiConsultant = () => {
       parts: [{ text: msg.content }],
     })),
   });
+  console.log(response.text);
       const data = await response.text;
 
       const reply = data;
