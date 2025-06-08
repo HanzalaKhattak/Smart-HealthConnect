@@ -1,8 +1,12 @@
 // Doctor.jsx
 import { useParams } from 'react-router-dom';
+import { useState } from 'react';
+import AppointmentModal from '../../Components/BookingModal/AppointmentModal';
 
 const DoctorList = () => {
   const { specialization } = useParams();
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const doctors = [
     {
@@ -43,12 +47,17 @@ const DoctorList = () => {
     },
   ];
 
+  const handleBookAppointment = (doctor) => {
+    setSelectedDoctor(doctor);
+    setIsModalOpen(true);
+  };
+
   const filteredDoctors = doctors.filter(
     (doc) => doc.specialization === decodeURIComponent(specialization)
   );
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
+    <div className="p-6 bg-gray-100 min-h-screen animate-fade-in">
       <h1 className="text-4xl font-bold mb-8 text-center text-gray-800">
         Doctors in {specialization}
       </h1>
@@ -58,12 +67,12 @@ const DoctorList = () => {
           filteredDoctors.map((doc, index) => (
             <div
               key={index}
-              className="bg-white rounded-2xl shadow-md hover:shadow-xl transition duration-300 p-6 flex flex-col items-center text-center"
+              className="bg-white rounded-2xl shadow-md hover:shadow-xl transition duration-300 p-6 flex flex-col items-center text-center border-2 border-green-100 hover:scale-105"
             >
               <img
                 src={doc.image}
                 alt={doc.name}
-                className="w-32 h-32 object-cover rounded-full border-4 border-green-500 mb-4"
+                className="w-32 h-32 object-cover rounded-full border-4 border-green-500 mb-4 drop-shadow"
               />
               <h2 className="text-xl font-semibold text-gray-800 mb-1">{doc.name}</h2>
               <p className="text-sm text-green-600 font-medium mb-2">
@@ -75,6 +84,12 @@ const DoctorList = () => {
                 <p><span className="font-semibold">Hospital:</span> {doc.hospital}</p>
                 <p><span className="font-semibold">Clinic:</span> {doc.clinic}</p>
               </div>
+              <button
+                onClick={() => handleBookAppointment(doc)}
+                className="mt-4 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Book Appointment
+              </button>
             </div>
           ))
         ) : (
@@ -83,6 +98,13 @@ const DoctorList = () => {
           </p>
         )}
       </div>
+
+      {/* Appointment Booking Modal */}
+      <AppointmentModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        doctor={selectedDoctor}
+      />
     </div>
   );
 };
