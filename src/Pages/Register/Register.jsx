@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FaUser, FaUserMd, FaHospital, FaTools } from 'react-icons/fa';
-import { API_User, API_Doctor, API_HospitalAdmin } from '../../Components/apis/apisUrl';
-import { Add_User, Register_Doctor, Register_HospitalAdmin } from '../../Components/apis/endpoints';
+import { API_User, API_Doctor, API_HospitalAdmin, API_SuperAdmin } from '../../Components/apis/apisUrl';
+import { Add_User, Register_Doctor, Register_HospitalAdmin, Register_SuperAdin } from '../../Components/apis/endpoints';
 
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -28,6 +28,8 @@ const RegisterForm = () => {
       url = API_Doctor + Register_Doctor;
     }else if(userType === 'hospitalAdmin'){
       url = API_HospitalAdmin + Register_HospitalAdmin;
+    }else if(userType === 'systemAdmin'){
+      url = API_SuperAdmin + Register_SuperAdin;
     }else {
       url = API_User + Add_User;
     }
