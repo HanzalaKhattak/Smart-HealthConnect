@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FaUser, FaUserMd, FaHospital, FaTools } from 'react-icons/fa';
-import { API_User, API_Doctor } from '../../Components/apis/apisUrl';
-import { Add_User, Register_Doctor } from '../../Components/apis/endpoints';
+import { API_User, API_Doctor, API_HospitalAdmin } from '../../Components/apis/apisUrl';
+import { Add_User, Register_Doctor, Register_HospitalAdmin } from '../../Components/apis/endpoints';
 
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -26,6 +26,8 @@ const RegisterForm = () => {
 
     if(userType === 'doctor'){
       url = API_Doctor + Register_Doctor;
+    }else if(userType === 'hospitalAdmin'){
+      url = API_HospitalAdmin + Register_HospitalAdmin;
     }else {
       url = API_User + Add_User;
     }
@@ -103,7 +105,7 @@ const RegisterForm = () => {
             />
             <input
               type="text"
-              name="hospitalID"
+              name="hospitalId"
               placeholder="Hospital ID"
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
