@@ -1,8 +1,8 @@
 import { useState } from "react";
 import InputField from "../Register/InputComponent/InputField";
 import { useNavigate } from "react-router-dom";
-import { Add_User } from "../../Components/apis/apisUrl";
-import { Login_User_EndPoint } from "../../Components/apis/endpoints";
+import { API_User } from "../../Components/apis/apisUrl";
+import { Login_User } from "../../Components/apis/endpoints";
 import axios from "axios";
 
 
@@ -37,7 +37,7 @@ const Login = () => {
 
       console.log("login",login);
       
-      const login_Url = Add_User+Login_User_EndPoint
+      const login_Url = API_User + Login_User;
       console.log(login_Url)
       const res = await axios.post(login_Url,login);
       console.log("res",res)

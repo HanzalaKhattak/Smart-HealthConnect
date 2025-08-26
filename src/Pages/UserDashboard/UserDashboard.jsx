@@ -4,14 +4,14 @@ import { FaStethoscope, FaUserMd, FaPills, FaHeartbeat, FaBell, FaUserCircle } f
 const UserDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Top Navigation Bar */}
+      {/* Top Navigation Bar
       <header className="bg-white shadow-md p-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-green-600">Smart HealthConnect</h1>
         <div className="flex items-center gap-4">
           <button className="text-xl"><FaBell /></button>
           <button className="text-xl"><FaUserCircle /></button>
         </div>
-      </header>
+      </header> */}
 
       <div className="flex">
         {/* Sidebar Navigation */}

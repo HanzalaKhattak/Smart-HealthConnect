@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FaUser, FaUserMd, FaHospital, FaTools } from 'react-icons/fa';
-import { Add_User, Register_Doctor } from '../../Components/apis/apisUrl';
-import { Add_User_EndPoint, Register_Doctor_Endpoint } from '../../Components/apis/endpoints';
+import { API_User, API_Doctor } from '../../Components/apis/apisUrl';
+import { Add_User, Register_Doctor } from '../../Components/apis/endpoints';
 
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -22,7 +22,7 @@ const RegisterForm = () => {
     // Submit form data to the backend here
     const newUserData = { userType, ...formData };
     console.log("newUser", newUserData)
-    const UrI = Add_User + Add_User_EndPoint;
+    const UrI = API_User + Add_User;
     console.log("urk", UrI);
     axios.post(UrI, newUserData)
     .then((res)=>{
