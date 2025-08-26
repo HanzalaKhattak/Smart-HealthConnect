@@ -18,13 +18,18 @@ const RegisterForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Registration data:', { userType, ...formData });
+    console.log('Registration data:', {...formData });
     // Submit form data to the backend here
     const newUserData = { userType, ...formData };
     console.log("newUser", newUserData)
-    const UrI = API_User + Add_User;
-    console.log("urk", UrI);
-    axios.post(UrI, newUserData)
+    let url = '';
+
+    if(userType === 'doctor'){
+      url = API_Doctor + Register_Doctor;
+    }else {
+      url = API_User + Add_User;
+    }
+    axios.post(url, newUserData)
     .then((res)=>{
       console.log(res);
       Nav('/')
@@ -77,7 +82,7 @@ const RegisterForm = () => {
             />
             <input
               type="text"
-              name="license"
+              name="licenseNumber"
               placeholder="Medical License Number"
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
