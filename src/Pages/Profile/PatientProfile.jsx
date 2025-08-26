@@ -4,11 +4,11 @@ import { FaUser, FaEnvelope, FaPhone, FaCalendarAlt, FaNotesMedical, FaEdit } fr
 const PatientProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
-    name: 'John Doe',
-    email: 'john@example.com',
+    name: 'Muhammad Hanzala Khan',
+    email: 'muhammadhanzlahkhan1@gmail.com',
     phone: '+92 300 1234567',
-    dob: '1990-01-01',
-    bloodGroup: 'O+',
+    dob: '2003-08-26',
+    bloodGroup: 'B-',
     allergies: 'None',
     medications: 'None',
     medicalHistory: 'No major illnesses'

@@ -23,6 +23,7 @@ import FAQ from "./Pages/FAQ/FAQ";
 import ContactUs from "./Pages/Contact/ContactUs";
 import NotFound from "./Pages/NotFound/NotFound";
 import PatientProfile from "./Pages/Profile/PatientProfile";
+import ShowCard from "./Components/Specialization Cards/ShowCard";
 import './index.css'; // Ensure Tailwind is imported
 
 function App() {
@@ -41,6 +42,7 @@ function App() {
             {/* Public Routes */}
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/specializations" element={<ShowCard />} />
 
             <Route element={<Layout />}>
               {/* Public Routes within Layout */}

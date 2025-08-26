@@ -61,7 +61,7 @@ const AiConsultant = () => {
 
 
   return (
-    <div className="flex flex-col h-screen max-w-3xl mx-auto p-4 bg-white shadow-md rounded animate-fade-in">
+    <div className="flex flex-col h-100 max-w-3xl mx-auto p-4 mt-10 bg-white shadow-md rounded animate-fade-in">
       <h1 className="text-2xl font-bold mb-4 text-center">🧠 AI Medical Assistant (Gemini)</h1>
 
       <div className="flex-1 overflow-y-auto bg-gray-100 p-4 rounded mb-2">

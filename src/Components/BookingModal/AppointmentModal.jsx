@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { FaTimes, FaCalendarAlt, FaClock, FaUserMd, FaClipboardList } from 'react-icons/fa';
 
 const AppointmentModal = ({ isOpen, onClose, doctor }) => {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(doctor ? 1 : 0); // Start at step 0 if no doctor selected
+  const [selectedDoctor, setSelectedDoctor] = useState(doctor);
   const [formData, setFormData] = useState({
     date: '',
     time: '',
@@ -10,6 +11,42 @@ const AppointmentModal = ({ isOpen, onClose, doctor }) => {
     symptoms: '',
     notes: ''
   });
+
+  // Sample doctors list for selection
+  const availableDoctors = [
+    {
+      id: 1,
+      name: 'Dr. Sarah Johnson',
+      specialization: 'Cardiology',
+      experience: '12 years',
+      image: 'https://randomuser.me/api/portraits/women/44.jpg',
+      hospital: 'City General Hospital'
+    },
+    {
+      id: 2,
+      name: 'Dr. Michael Chen',
+      specialization: 'Dermatology',
+      experience: '8 years',
+      image: 'https://randomuser.me/api/portraits/men/32.jpg',
+      hospital: 'Skin Care Clinic'
+    },
+    {
+      id: 3,
+      name: 'Dr. Emily Davis',
+      specialization: 'Pediatrics',
+      experience: '10 years',
+      image: 'https://randomuser.me/api/portraits/women/68.jpg',
+      hospital: 'Children\'s Medical Center'
+    },
+    {
+      id: 4,
+      name: 'Dr. James Wilson',
+      specialization: 'Orthopedics',
+      experience: '15 years',
+      image: 'https://randomuser.me/api/portraits/men/54.jpg',
+      hospital: 'Bone & Joint Institute'
+    }
+  ];
 
   const availableTimeSlots = [
     '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM',
@@ -20,7 +57,35 @@ const AppointmentModal = ({ isOpen, onClose, doctor }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // Handle appointment submission
-    console.log('Appointment booked:', formData);
+    console.log('Appointment booked:', {
+      doctor: selectedDoctor || doctor,
+      ...formData
+    });
+
+    // Reset form and close modal
+    setFormData({
+      date: '',
+      time: '',
+      type: 'consultation',
+      symptoms: '',
+      notes: ''
+    });
+    setStep(doctor ? 1 : 0);
+    setSelectedDoctor(doctor);
+    onClose();
+  };
+
+  const handleClose = () => {
+    // Reset form when closing
+    setFormData({
+      date: '',
+      time: '',
+      type: 'consultation',
+      symptoms: '',
+      notes: ''
+    });
+    setStep(doctor ? 1 : 0);
+    setSelectedDoctor(doctor);
     onClose();
   };
 
@@ -33,7 +98,7 @@ const AppointmentModal = ({ isOpen, onClose, doctor }) => {
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-2xl font-bold text-gray-800">Book Appointment</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
             <FaTimes className="text-gray-600" />
@@ -44,10 +109,10 @@ const AppointmentModal = ({ isOpen, onClose, doctor }) => {
         <div className="p-6">
           {/* Progress Indicator */}
           <div className="flex justify-between mb-8">
-            {[1, 2, 3].map((i) => (
+            {(doctor ? [1, 2, 3] : [0, 1, 2, 3]).map((i, index) => (
               <div
                 key={i}
-                className={`flex items-center ${i < 3 ? 'flex-1' : ''}`}
+                className={`flex items-center ${index < (doctor ? 2 : 3) ? 'flex-1' : ''}`}
               >
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center ${
@@ -56,9 +121,9 @@ const AppointmentModal = ({ isOpen, onClose, doctor }) => {
                       : 'bg-gray-200 text-gray-400'
                   }`}
                 >
-                  {i}
+                  {doctor ? i : i + 1}
                 </div>
-                {i < 3 && (
+                {index < (doctor ? 2 : 3) && (
                   <div
                     className={`flex-1 h-1 mx-2 ${
                       step > i ? 'bg-green-600' : 'bg-gray-200'
@@ -71,10 +136,50 @@ const AppointmentModal = ({ isOpen, onClose, doctor }) => {
 
           {/* Step Content */}
           <form onSubmit={handleSubmit}>
+            {step === 0 && !doctor && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <FaUserMd className="text-green-600" />
+                    Select a Doctor
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {availableDoctors.map((doc) => (
+                      <div
+                        key={doc.id}
+                        onClick={() => {
+                          setSelectedDoctor(doc);
+                          setStep(1);
+                        }}
+                        className={`p-4 border rounded-lg cursor-pointer transition-all hover:border-green-500 hover:shadow-md ${
+                          selectedDoctor?.id === doc.id
+                            ? 'border-green-500 bg-green-50'
+                            : 'border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={doc.image}
+                            alt={doc.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                          <div>
+                            <h4 className="font-semibold text-gray-800">{doc.name}</h4>
+                            <p className="text-sm text-green-600">{doc.specialization}</p>
+                            <p className="text-xs text-gray-500">{doc.experience} • {doc.hospital}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {step === 1 && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-gray-700 font-medium mb-2 flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
                     <FaCalendarAlt className="text-green-600" />
                     Select Date
                   </label>
@@ -91,7 +196,7 @@ const AppointmentModal = ({ isOpen, onClose, doctor }) => {
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 font-medium mb-2 flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
                     <FaClock className="text-green-600" />
                     Select Time
                   </label>
@@ -118,7 +223,7 @@ const AppointmentModal = ({ isOpen, onClose, doctor }) => {
             {step === 2 && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-gray-700 font-medium mb-2 flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
                     <FaUserMd className="text-green-600" />
                     Appointment Type
                   </label>
@@ -137,7 +242,7 @@ const AppointmentModal = ({ isOpen, onClose, doctor }) => {
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 font-medium mb-2 flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
                     <FaClipboardList className="text-green-600" />
                     Symptoms/Reason
                   </label>
@@ -159,6 +264,12 @@ const AppointmentModal = ({ isOpen, onClose, doctor }) => {
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h3 className="font-semibold text-lg mb-4">Appointment Summary</h3>
                   <dl className="space-y-2">
+                    {(selectedDoctor || doctor) && (
+                      <div className="flex justify-between">
+                        <dt className="text-gray-600">Doctor:</dt>
+                        <dd className="font-medium">{(selectedDoctor || doctor)?.name}</dd>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <dt className="text-gray-600">Date:</dt>
                       <dd className="font-medium">{formData.date}</dd>
@@ -182,7 +293,7 @@ const AppointmentModal = ({ isOpen, onClose, doctor }) => {
 
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-8">
-              {step > 1 && (
+              {step > (doctor ? 1 : 0) && (
                 <button
                   type="button"
                   onClick={() => setStep(step - 1)}
@@ -191,11 +302,18 @@ const AppointmentModal = ({ isOpen, onClose, doctor }) => {
                   Back
                 </button>
               )}
-              {step < 3 ? (
+              {step < (doctor ? 3 : 3) ? (
                 <button
                   type="button"
-                  onClick={() => setStep(step + 1)}
-                  className="ml-auto px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  onClick={() => {
+                    if (step === 0 && !selectedDoctor) {
+                      alert('Please select a doctor first');
+                      return;
+                    }
+                    setStep(step + 1);
+                  }}
+                  disabled={step === 0 && !selectedDoctor}
+                  className="ml-auto px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>

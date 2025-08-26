@@ -93,8 +93,8 @@ const ShowCard = () => {
     };
     
   return (
-    <div className="flex flex-col items-center justify-center px-4 py-8">
-      <h1 className="text-4xl font-bold text-center mb-6">Services</h1>
+    <div id='specializations' className="flex flex-col items-center justify-center px-4 py-8">
+      <h1 className="text-4xl font-bold text-center mb-6">Specializations</h1>
       <section className="flex flex-wrap justify-center gap-6 mb-6">
         {specializations.slice(0, visibleCards).map((item) => (
           <DocCards key={item.h1} {...item} />

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaUserMd, FaHospital, FaPills, FaRobot, FaCalendarCheck, FaQuestionCircle } from 'react-icons/fa';
 import img1 from './HomeAssets/mandf.png';
@@ -10,6 +10,20 @@ import PharmasNearYou from '../../Components/PharmasNearYou/PharmasNearYou';
 
 const Home = () => {
   const navigate = useNavigate();
+  const showCardRef = useRef(null); // For "Get Started" button
+  const specializationRef = useRef(null); // For "Find Doctors" card
+
+  const scrollToShowCard = () => {
+    showCardRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleFeatureClick = (path) => {
+    if (path === "/specializations") {
+      specializationRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      navigate(path);
+    }
+  };
 
   const features = [
     {
@@ -22,7 +36,7 @@ const Home = () => {
       icon: <FaRobot className="text-4xl" />,
       title: "AI Health Assistant",
       description: "Get instant health guidance with our AI system",
-      path: "/ai"
+      path: "/ai-consultation"
     },
     {
       icon: <FaHospital className="text-4xl" />,
@@ -55,7 +69,7 @@ const Home = () => {
       {/* Hero Section */}
       <section className='bg-gradient-to-r from-green-50 to-blue-50 rounded-xl shadow-md my-5 overflow-hidden'>
         <div className='container mx-auto px-4 py-12 md:py-20'>
-          <div className='flex flex-col md:flex-row items-center justify-between gap-8'>
+          <div className='flex flex-col md:flex-row items-center justify-between gap-12 pl-10'>
             <div className='flex flex-col items-center md:items-start text-center md:text-left max-w-xl'>
               <h1 className='text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-4'>
                 We <span className='text-green-600'>Care</span> about
@@ -65,7 +79,7 @@ const Home = () => {
                 Access quality healthcare services from anywhere, anytime. Connect with doctors, find hospitals, and get AI-powered health guidance.
               </p>
               <button
-                onClick={() => navigate('/specializations')}
+                onClick={scrollToShowCard}
                 className='bg-gradient-to-r from-green-600 to-green-700 text-white text-lg font-semibold px-8 py-3 rounded-lg hover:scale-105 transition-all duration-200 shadow-md'
               >
                 Get Started
@@ -78,14 +92,14 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="py-12 px-4">
+      {/* Features Grid (Our Services) */}
+      <section className="py-12 px-4" ref={showCardRef}>
         <h2 className="text-3xl font-bold text-center mb-12">Our Services</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
           {features.map((feature, index) => (
             <div
               key={index}
-              onClick={() => navigate(feature.path)}
+              onClick={() => handleFeatureClick(feature.path)}
               className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer group"
             >
               <div className="flex flex-col items-center text-center">
@@ -101,19 +115,17 @@ const Home = () => {
       </section>
 
       {/* Quick Access Components */}
-      <span className='flex flex-col md:flex-row items-center justify-evenly gap-6 my-8'>
-        <AIAgent />
-        <BookAppointment />
-      </span>
+      <AIAgent />
+      <BookAppointment />
 
       {/* Location-based Services */}
-      <div className="space-y-8 mb-12">
-        <HospNearYou />
-        <PharmasNearYou />
-      </div>
+      <HospNearYou />
+      <PharmasNearYou />
 
       {/* Doctor Specializations */}
-      <ShowCard />
+      <div ref={specializationRef}>
+        <ShowCard />
+      </div>
     </div>
   );
 };
