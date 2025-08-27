@@ -5,10 +5,10 @@ const SystemAdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
-      <header className="bg-white shadow p-4 flex justify-between items-center">
+      {/* <header className="bg-white shadow p-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-green-700">System Admin Dashboard</h1>
         <div className="text-gray-500">Admin Panel</div>
-      </header>
+      </header> */}
 
       <div className="flex">
         {/* Sidebar */}

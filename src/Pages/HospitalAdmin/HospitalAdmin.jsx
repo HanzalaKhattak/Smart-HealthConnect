@@ -5,12 +5,12 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-md p-4 flex justify-between items-center">
+      {/* <header className="bg-white shadow-md p-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-green-700">Clinic Admin Dashboard</h1>
         <div className="flex items-center gap-4">
           <FaCog className="text-xl text-gray-600 cursor-pointer" />
         </div>
-      </header>
+      </header> */}
 
       <div className="flex">
         {/* Sidebar */}
