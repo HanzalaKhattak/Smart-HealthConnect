@@ -61,22 +61,22 @@ const Login = () => {
         
         // Store token and user info based on user type
         if (userType === 'doctor') {
-          localStorage.setItem('token', data.Doctor_Token || data.token);
-          localStorage.setItem('username', data?.LoginDoctor?.username);
-          localStorage.setItem('userInfo', data.LoginDoctor?.email);
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('username', data.LoginDoctor.username);
+          localStorage.setItem('userInfo', data.LoginDoctor.email);
           localStorage.setItem('userType', 'doctor');
           Nav('/doctor-dashboard');
-        } if(userType === 'hospitalAdmin'){
+        } else if (userType === 'hospitalAdmin') {
           localStorage.setItem('token', data.token);
           localStorage.setItem('username', data.LoginHospitalAdmin.username);
           localStorage.setItem('userInfo', data.LoginHospitalAdmin.email);
           localStorage.setItem('userType', 'hospitalAdmin');
-          Nav('/hospital-admin')
-        } if(userType === 'systemAdmin'){
+          Nav('/hospital-admin');
+        } else if (userType === 'systemAdmin') {
           localStorage.setItem('token', data.token);
           localStorage.setItem('username', data.LoginSuperAdmin.username);
           localStorage.setItem('userInfo', data.LoginSuperAdmin.email);
-          localStorage.setItem('userType', 'systemAdmin')
+          localStorage.setItem('userType', 'systemAdmin');
           Nav('/system-admin');
         } else {
           localStorage.setItem('token', data.User_Token || data.token);

@@ -23,6 +23,7 @@ import FAQ from "./Pages/FAQ/FAQ";
 import ContactUs from "./Pages/Contact/ContactUs";
 import NotFound from "./Pages/NotFound/NotFound";
 import PatientProfile from "./Pages/Profile/PatientProfile";
+import DoctorEditProfile from "./Pages/DoctorProfile/DoctorEditProfile";
 import ShowCard from "./Components/Specialization Cards/ShowCard";
 import './index.css'; // Ensure Tailwind is imported
 
@@ -67,6 +68,7 @@ function App() {
 
                 {/* Role-based Dashboards */}
                 <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
+                <Route path="/doctor/edit-profile" element={<DoctorEditProfile />} />
                 <Route path="/hospital-admin" element={<HospitalAdmin />} />
                 <Route path="/system-admin" element={<SystemAdminDashboard />} />
               </Route>

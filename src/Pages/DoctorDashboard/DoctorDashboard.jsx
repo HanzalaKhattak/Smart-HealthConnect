@@ -1,5 +1,6 @@
 import React from 'react';
 import { FaCalendarCheck, FaUserInjured, FaComments, FaNotesMedical, FaBell, FaUserMd } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
 const DoctorDashboard = () => {
   return (
@@ -23,6 +24,9 @@ const DoctorDashboard = () => {
             <a href="#">Messages</a>
             <a href="#">Prescriptions</a>
             <a href="#">Availability Settings</a>
+            <Link to="/doctor/edit-profile" className="text-gray-700 hover:text-green-600 transition-colors">
+              Edit Profile & Location
+            </Link>
             <a href="#">Support</a>
           </nav>
         </aside>
@@ -42,7 +46,9 @@ const DoctorDashboard = () => {
             <ActionCard icon={<FaNotesMedical />} label="Write Prescription" />
             <ActionCard icon={<FaComments />} label="Messages" />
             <ActionCard icon={<FaCalendarCheck />} label="Set Availability" />
-            <ActionCard icon={<FaUserMd />} label="Profile Settings" />
+            <Link to="/doctor/edit-profile">
+              <ActionCard icon={<FaUserMd />} label="Edit Profile & Location" />
+            </Link>
           </div>
 
           {/* Appointments List */}

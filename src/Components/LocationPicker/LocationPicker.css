@@ -1,0 +1,29 @@
+/* Leaflet Map Styles */
+.leaflet-container {
+  height: 400px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+}
+
+.leaflet-popup-tip {
+  background: white;
+}
+
+/* Custom marker styles */
+.leaflet-marker-icon {
+  border-radius: 50%;
+}
+
+/* Ensure map tiles load properly */
+.leaflet-tile-pane {
+  filter: none;
+}
+
+/* Fix for marker shadows */
+.leaflet-marker-shadow {
+  filter: none;
+}
