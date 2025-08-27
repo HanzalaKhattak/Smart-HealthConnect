@@ -114,7 +114,7 @@ const DoctorEditProfile = () => {
           </div>
           
           {/* Right Column - Map */}
-          <div>
+          <div className="overflow-hidden rounded-xl">
             <LocationPicker 
               onLocationSelect={handleLocationSelect}
               initialPosition={formData.latitude && formData.longitude ? [parseFloat(formData.latitude), parseFloat(formData.longitude)] : null}

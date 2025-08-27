@@ -64,6 +64,7 @@ const Login = () => {
           localStorage.setItem('token', data.token);
           localStorage.setItem('username', data.LoginDoctor.username);
           localStorage.setItem('userInfo', data.LoginDoctor.email);
+          localStorage.setItem('userId', data.LoginDoctor._id)
           localStorage.setItem('userType', 'doctor');
           Nav('/doctor-dashboard');
         } else if (userType === 'hospitalAdmin') {
