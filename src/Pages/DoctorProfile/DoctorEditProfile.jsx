@@ -8,6 +8,7 @@ const DoctorEditProfile = () => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
+    experience: '',
     specialization: '',
     licenseNumber: '',
     hospitalName: '',
@@ -73,6 +74,7 @@ const DoctorEditProfile = () => {
         username: '',
         email: '',
         specialization: '',
+        experience: '',
         licenseNumber: '',
         hospitalName: '',
         latitude: '',
@@ -128,6 +130,16 @@ const DoctorEditProfile = () => {
               name="specialization"
               placeholder="Specialization"
               value={formData.specialization}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              required
+            />
+
+            <input
+              type="text"
+              name="experience"
+              placeholder="Experience"
+              value={formData.experience}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               required
