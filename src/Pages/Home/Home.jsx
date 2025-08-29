@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaUserMd, FaHospital, FaPills, FaRobot, FaCalendarCheck, FaQuestionCircle } from 'react-icons/fa';
 import img1 from './HomeAssets/mandf.png';
 import AIAgent from '../../Components/AIAgent/AIAgent';
-import BookAppointment from '../../Components/BookAppointment';
+// import BookAppointment from '../../Components/BookAppointment';
 import HospNearYou from '../../Components/HospitalNearYou/HospNearYou';
 // import ShowCard from '../../Components/Specialization Cards/ShowCard';
 import PharmasNearYou from '../../Components/PharmasNearYou/PharmasNearYou';
@@ -118,7 +118,7 @@ const Home = () => {
 
       {/* Quick Access Components */}
       <AIAgent />
-      <BookAppointment />
+      {/* <BookAppointment /> */}
 
       {/* Location-based Services */}
       <HospNearYou />
