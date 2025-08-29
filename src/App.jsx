@@ -5,13 +5,7 @@ import About from "./Pages/About/About";
 import Register from "./Pages/Register/Register";
 import Login from "./Pages/Login/Login";
 import Layout from "./Components/Layout";
-import DocCards from "./Components/Specialization Cards/cardComponent/DocCards";
-import Doctors from "./Pages/Doctors/Doctors";
-import PharmasNearYou from "./Components/PharmasNearYou/PharmasNearYou";
 import NearbyPharmas from "./Components/PharmasNearYou/NearbyPharmas";
-import HospNearYou from "./Components/HospitalNearYou/HospNearYou";
-import NearbyHospitals from "./Components/HospitalNearYou/NearbyHospitals";
-import AIAgent from "./Components/AIAgent/AIAgent";
 import AiConsultant from "./Components/AIAgent/AiConsultant";
 import ProtectedRoute from "./Pages/protectedRouteError/protectedRoutesErrorpage";
 import Appointment from "./Pages/Appointment/Appointment";
@@ -24,8 +18,7 @@ import ContactUs from "./Pages/Contact/ContactUs";
 import NotFound from "./Pages/NotFound/NotFound";
 import PatientProfile from "./Pages/Profile/PatientProfile";
 import DoctorEditProfile from "./Pages/DoctorProfile/DoctorEditProfile";
-import ShowCard from "./Components/Specialization Cards/ShowCard";
-import './index.css'; // Ensure Tailwind is imported
+import './index.css'; 
 
 function App() {
   return (
@@ -43,7 +36,6 @@ function App() {
             {/* Public Routes */}
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/specializations" element={<ShowCard />} />
 
             <Route element={<Layout />}>
               {/* Public Routes within Layout */}
@@ -54,19 +46,11 @@ function App() {
 
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
-                {/* User Features */}
                 <Route path="/dashboard" element={<UserDashboard />} />
                 <Route path="/profile" element={<PatientProfile />} />
                 <Route path="/ai-consultation" element={<AiConsultant />} />
                 <Route path="/book-appointment" element={<Appointment />} />
-                <Route path="/find-doctors" element={<DocCards />} />
-                <Route path="/doctors/:specialization" element={<Doctors />} />
-
-                {/* Location Services */}
                 <Route path="/find-pharmacies" element={<NearbyPharmas />} />
-                <Route path="/find-hospitals" element={<NearbyHospitals />} />
-
-                {/* Role-based Dashboards */}
                 <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
                 <Route path="/doctor/edit-profile" element={<DoctorEditProfile />} />
                 <Route path="/hospital-admin" element={<HospitalAdmin />} />

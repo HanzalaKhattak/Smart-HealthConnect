@@ -5,17 +5,17 @@ import img1 from './HomeAssets/mandf.png';
 import AIAgent from '../../Components/AIAgent/AIAgent';
 import BookAppointment from '../../Components/BookAppointment';
 import HospNearYou from '../../Components/HospitalNearYou/HospNearYou';
-import ShowCard from '../../Components/Specialization Cards/ShowCard';
+// import ShowCard from '../../Components/Specialization Cards/ShowCard';
 import PharmasNearYou from '../../Components/PharmasNearYou/PharmasNearYou';
 
 const Home = () => {
   const navigate = useNavigate();
-  const showCardRef = useRef(null); // For "Get Started" button
+  // const showCardRef = useRef(null); // For "Get Started" button
   const specializationRef = useRef(null); // For "Find Doctors" card
 
-  const scrollToShowCard = () => {
-    showCardRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // const scrollToShowCard = () => {
+  //   showCardRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // };
 
   const handleFeatureClick = (path) => {
     if (path === "/specializations") {
@@ -79,7 +79,7 @@ const Home = () => {
                 Access quality healthcare services from anywhere, anytime. Connect with doctors, find hospitals, and get AI-powered health guidance.
               </p>
               <button
-                onClick={scrollToShowCard}
+                // onClick={scrollToShowCard}
                 className='bg-gradient-to-r from-green-600 to-green-700 text-white text-lg font-semibold px-8 py-3 rounded-lg hover:scale-105 transition-all duration-200 shadow-md'
               >
                 Get Started
@@ -93,7 +93,9 @@ const Home = () => {
       </section>
 
       {/* Features Grid (Our Services) */}
-      <section className="py-12 px-4" ref={showCardRef}>
+      <section className="py-12 px-4" 
+      // ref={showCardRef}
+      >
         <h2 className="text-3xl font-bold text-center mb-12">Our Services</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
           {features.map((feature, index) => (
@@ -122,10 +124,7 @@ const Home = () => {
       <HospNearYou />
       <PharmasNearYou />
 
-      {/* Doctor Specializations */}
-      <div ref={specializationRef}>
-        <ShowCard />
-      </div>
+      
     </div>
   );
 };
