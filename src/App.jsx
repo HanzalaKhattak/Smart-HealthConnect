@@ -8,7 +8,7 @@ import Layout from "./Components/Layout";
 // import NearbyPharmas from "./Components/PharmasNearYou/NearbyPharmas";
 import AiConsultant from "./Components/AIAgent/AiConsultant";
 import ProtectedRoute from "./Pages/protectedRouteError/protectedRoutesErrorpage";
-// import Appointment from "./Pages/Appointment/Appointment";
+import Appointment from "./Pages/Appointment/Appointment";
 import UserDashboard from "./Pages/UserDashboard/UserDashboard";
 import DoctorDashboard from "./Pages/DoctorDashboard/DoctorDashboard";
 import HospitalAdmin from "./Pages/HospitalAdmin/HospitalAdmin";
@@ -43,13 +43,13 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/contact" element={<ContactUs />} />
+              <Route path="/book-appointment" element={<Appointment />} />
 
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<UserDashboard />} />
                 <Route path="/profile" element={<PatientProfile />} />
                 <Route path="/ai-consultation" element={<AiConsultant />} />
-                {/* <Route path="/book-appointment" element={<Appointment />} /> */}
                 {/* <Route path="/find-pharmacies" element={<NearbyPharmas />} /> */}
                 <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
                 <Route path="/doctor/edit-profile" element={<DoctorEditProfile />} />

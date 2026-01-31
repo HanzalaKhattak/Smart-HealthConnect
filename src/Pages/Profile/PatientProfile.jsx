@@ -1,27 +1,122 @@
-import React, { useState } from 'react';
-import { FaUser, FaEnvelope, FaPhone, FaCalendarAlt, FaNotesMedical, FaEdit } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaUser, FaEnvelope, FaPhone, FaCalendarAlt, FaNotesMedical, FaEdit, FaSpinner } from 'react-icons/fa';
+import axios from 'axios';
+import { API_User } from '../../Components/apis/apisUrl';
+import { Get_User, Update_User } from '../../Components/apis/endpoints';
 
 const PatientProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
   const [profile, setProfile] = useState({
-    name: 'Muhammad Hanzala Khan',
-    email: 'muhammadhanzlahkhan1@gmail.com',
-    phone: '+92 300 1234567',
-    dob: '2003-08-26',
-    bloodGroup: 'B-',
+    name: '',
+    email: '',
+    phone: '',
+    dob: '',
+    bloodGroup: 'O+',
     allergies: 'None',
     medications: 'None',
     medicalHistory: 'No major illnesses'
   });
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // API call to save profile changes
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      setLoading(true);
+      const userId = localStorage.getItem('userId');
+      const token = localStorage.getItem('token');
+      
+      if (!userId) {
+        setMessage({ type: 'error', text: 'User not found. Please login again.' });
+        return;
+      }
+      
+      const response = await axios.get(`${API_User}${Get_User}/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const userData = response.data;
+      setProfile({
+        name: userData.username || '',
+        email: userData.email || '',
+        phone: userData.phone || '',
+        dob: userData.dateOfBirth ? userData.dateOfBirth.split('T')[0] : '',
+        bloodGroup: userData.bloodGroup || 'O+',
+        allergies: userData.allergies || 'None',
+        medications: userData.medications || 'None',
+        medicalHistory: userData.medicalHistory || 'No major illnesses'
+      });
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      // Use localStorage data as fallback
+      setProfile(prev => ({
+        ...prev,
+        name: localStorage.getItem('username') || '',
+        email: ''
+      }));
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const userId = localStorage.getItem('userId');
+      const token = localStorage.getItem('token');
+      
+      const updateData = {
+        username: profile.name,
+        email: profile.email,
+        phone: profile.phone,
+        dateOfBirth: profile.dob,
+        bloodGroup: profile.bloodGroup,
+        allergies: profile.allergies,
+        medications: profile.medications,
+        medicalHistory: profile.medicalHistory
+      };
+      
+      await axios.put(`${API_User}${Update_User}/${userId}`, updateData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Update localStorage
+      localStorage.setItem('username', profile.name);
+      
+      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      setIsEditing(false);
+      
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setMessage({ type: 'error', text: 'Failed to update profile. Please try again.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <FaSpinner className="animate-spin text-green-600 text-4xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8 animate-fade-in">
       <div className="max-w-3xl mx-auto">
+        {/* Message Toast */}
+        {message.text && (
+          <div className={`mb-4 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            {message.text}
+          </div>
+        )}
+        
         <div className="bg-white shadow-lg rounded-2xl overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4">
@@ -182,9 +277,18 @@ const PatientProfile = () => {
               <div className="flex justify-end">
                 <button
                   onClick={handleSave}
-                  className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition"
+                  disabled={saving}
+                  className={`px-6 py-2 rounded-lg transition flex items-center gap-2 ${
+                    saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
                 >
-                  Save Changes
+                  {saving ? (
+                    <>
+                      <FaSpinner className="animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
                 </button>
               </div>
             )}

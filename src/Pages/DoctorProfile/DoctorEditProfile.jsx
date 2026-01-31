@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import LocationPicker from "../../Components/LocationPicker/LocationPicker";
-import { Update_Doctor } from '../../Components/apis/endpoints';
+import { Update_Doctor, Get_Specific_Doctor } from '../../Components/apis/endpoints';
 import { API_Doctor } from '../../Components/apis/apisUrl';
 import axios from 'axios';
+import { FaSpinner } from 'react-icons/fa';
 
 const DoctorEditProfile = () => {
   const [formData, setFormData] = useState({
@@ -16,7 +17,52 @@ const DoctorEditProfile = () => {
     longitude: ''
   });
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    fetchDoctorProfile();
+  }, []);
+
+  const fetchDoctorProfile = async () => {
+    try {
+      setInitialLoading(true);
+      const doctorId = localStorage.getItem('userId');
+      const token = localStorage.getItem('token');
+      
+      if (!doctorId) {
+        setMessage('Doctor not found. Please login again.');
+        return;
+      }
+      
+      const response = await axios.get(`${API_Doctor}${Get_Specific_Doctor}/${doctorId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const doctor = response.data.Doctor || response.data;
+      
+      if (doctor) {
+        setFormData({
+          username: doctor.username || '',
+          email: doctor.email || '',
+          experience: doctor.experience || '',
+          specialization: doctor.specialization || '',
+          licenseNumber: doctor.licenseNumber || '',
+          hospitalName: doctor.hospitalName || '',
+          latitude: doctor.latitude || '',
+          longitude: doctor.longitude || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching doctor profile:', error);
+      setFormData(prev => ({
+        ...prev,
+        username: localStorage.getItem('username') || ''
+      }));
+    } finally {
+      setInitialLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -35,13 +81,10 @@ const DoctorEditProfile = () => {
       setLoading(true);
       setMessage('');
       
-      // Get doctor ID from localStorage or wherever you store it
-      const doctorId = localStorage.getItem('userId') || 'DOCTOR_ID_HERE'; // Replace with actual doctor ID
+      const doctorId = localStorage.getItem('userId');
       const token = localStorage.getItem('token');
       
-      // Replace :DoctorId with actual doctor ID in the endpoint
-      const endpoint = Update_Doctor.replace(':DoctorId', doctorId);
-      const url = API_Doctor + endpoint;
+      const url = `${API_Doctor}${Update_Doctor}/${doctorId}`;
       
       const response = await axios.put(url, profileData, {
         headers: {
@@ -69,23 +112,21 @@ const DoctorEditProfile = () => {
     
     try {
       await updateDoctorProfile(formData);
-      // Clear form fields after successful submission
-      setFormData({
-        username: '',
-        email: '',
-        specialization: '',
-        experience: '',
-        licenseNumber: '',
-        hospitalName: '',
-        latitude: '',
-        longitude: ''
-      });
-      // Optionally redirect or show success message
+      // Update localStorage with new username
+      localStorage.setItem('username', formData.username);
     } catch (err) {
       // Error is already handled in updateDoctorProfile function
       console.error('Submit error:', err);
     }
   };
+
+  if (initialLoading) {
+    return (
+      <div className="max-w-4xl mx-auto p-8 mt-10 flex items-center justify-center">
+        <FaSpinner className="animate-spin text-green-600 text-4xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-8 mt-10 bg-white shadow-lg rounded-xl">

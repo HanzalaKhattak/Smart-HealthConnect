@@ -1,26 +1,46 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { FaChevronDown, FaUser, FaQuestionCircle } from 'react-icons/fa'
+import { FaChevronDown, FaUser, FaQuestionCircle, FaBars, FaTimes } from 'react-icons/fa'
 
 const NavBar = () => {
   const [tokenIs, settoken] = useState(null)
   const [user, setusername] = useState(null)
+  const [userType, setUserType] = useState(null)
   const [showServicesMenu, setShowServicesMenu] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
 
+  // Check auth state on mount and when location changes
   useEffect(() => {
+    checkAuthState();
+  }, [location.pathname])
+
+  const checkAuthState = () => {
     const token = localStorage.getItem('token')
     const username = localStorage.getItem('username')
+    const type = localStorage.getItem('userType')
     settoken(token)
     setusername(username)
-  }, [])
+    setUserType(type)
+  }
 
   const handlelogout = () => {
     localStorage.clear()
     settoken(null)
+    setusername(null)
+    setUserType(null)
     navigate('/')
+  }
+
+  const getDashboardPath = () => {
+    switch(userType) {
+      case 'doctor': return '/doctor-dashboard';
+      case 'hospitalAdmin': return '/hospital-admin';
+      case 'systemAdmin': return '/system-admin';
+      default: return '/dashboard';
+    }
   }
 
   const isActive = (path) => location.pathname === path
@@ -109,12 +129,13 @@ const NavBar = () => {
                     onMouseEnter={() => setShowUserMenu(true)}
                     onMouseLeave={() => setShowUserMenu(false)}
                   >
-                    <Link to="/dashboard" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
+                    <Link to={getDashboardPath()} className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
                       Dashboard
                     </Link>
                     <Link to="/profile" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
                       Profile
                     </Link>
+                    <hr className="my-1" />
                     <button
                       onClick={handlelogout}
                       className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50"
