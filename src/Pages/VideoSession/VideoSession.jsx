@@ -48,6 +48,8 @@ const VideoSession = () => {
 
   /* ── create peer helper ── */
   const createPeer = useCallback((initiator, stream, targetSocketId) => {
+    console.log(`🔗 Creating peer - Initiator: ${initiator}, Target: ${targetSocketId}`);
+    
     const peer = new Peer({
       initiator,
       trickle: true,
@@ -61,10 +63,12 @@ const VideoSession = () => {
     });
 
     peer.on('signal', (signal) => {
+      console.log('📤 Sending signal:', signal.type, 'to:', targetSocketId);
       socketRef.current?.emit('signal', { to: targetSocketId, signal });
     });
 
     peer.on('stream', (remoteStream) => {
+      console.log('🎥 Received remote stream!');
       if (remoteVideo.current) {
         remoteVideo.current.srcObject = remoteStream;
       }
@@ -73,12 +77,13 @@ const VideoSession = () => {
     });
 
     peer.on('close', () => {
+      console.log('❌ Peer connection closed');
       setConnected(false);
       setCallEnded(true);
     });
 
     peer.on('error', (err) => {
-      console.error('Peer error:', err);
+      console.error('❌ Peer error:', err);
     });
 
     return peer;
@@ -107,10 +112,13 @@ const VideoSession = () => {
         // Someone is already in the room → I am the initiator
         socket.on('room-users', (users) => {
           if (!mounted) return;
+          console.log('👥 Room users:', users);
           if (users.length > 0) {
             const target = users[0];
+            console.log('🚀 I am the initiator, connecting to:', target.userName);
             setRemoteName(target.userName);
             setRemoteRole(target.role);
+            setWaiting(false); // Other user is already in room
 
             const peer = createPeer(true, localStream.current, target.socketId);
             peerRef.current = peer;
@@ -118,27 +126,28 @@ const VideoSession = () => {
         });
 
         // A new user joins → I wait for their signal (I am responder)
-        socket.on('user-joined', ({ socketId, userName: name, role }) => {
+        socket.on('user-joined', ({ userName: name, role }) => {
           if (!mounted) return;
+          console.log('👤 User joined:', name, '- I will be the responder');
           setRemoteName(name);
           setRemoteRole(role);
-          setWaiting(false);
-
-          if (!peerRef.current) {
-            const peer = createPeer(false, localStream.current, socketId);
-            peerRef.current = peer;
-          }
+          // Don't create peer yet - wait for their offer signal
         });
 
         // Relay signaling data
         socket.on('signal', ({ from, signal }) => {
+          console.log('📡 Received signal from:', from, 'Type:', signal.type);
+          
           if (peerRef.current) {
+            // Peer already exists, just signal it
             peerRef.current.signal(signal);
           } else {
-            // peer not created yet — create as responder
+            // Peer not created yet — I'm the responder, create peer and signal
+            console.log('🔄 Creating responder peer');
             const peer = createPeer(false, localStream.current, from);
             peerRef.current = peer;
             peer.signal(signal);
+            setWaiting(false);
           }
         });
 
