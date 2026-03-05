@@ -16,6 +16,7 @@ const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sessionAppointment, setSessionAppointment] = useState(null);
   const [stats, setStats] = useState({
     todayAppointments: 0,
     totalPatients: 0,
@@ -69,13 +70,18 @@ const DoctorDashboard = () => {
     }
   };
 
-  const handleUpdateStatus = async (appointmentId, newStatus) => {
+  const handleUpdateStatus = async (appointmentId, newStatus, extra = {}) => {
     try {
-      await axios.put(`${API_Appointment}${Update_Appointment}/${appointmentId}`, { status: newStatus });
+      await axios.put(`${API_Appointment}${Update_Appointment}/${appointmentId}`, { status: newStatus, ...extra });
       fetchAppointments(doctorId);
     } catch (error) {
       console.error('Error updating appointment:', error);
     }
+  };
+
+  const handleCompleteSession = async (appointmentId, doctorNotes, prescription) => {
+    await handleUpdateStatus(appointmentId, 'Completed', { doctorNotes, prescription });
+    setSessionAppointment(null);
   };
 
   const formatDate = (dateString) => {
@@ -213,6 +219,16 @@ const DoctorDashboard = () => {
               loading={loading}
               formatDate={formatDate}
               onUpdateStatus={handleUpdateStatus}
+              onStartSession={setSessionAppointment}
+            />
+          )}
+
+          {sessionAppointment && (
+            <SessionModal
+              appointment={sessionAppointment}
+              onClose={() => setSessionAppointment(null)}
+              onComplete={handleCompleteSession}
+              onUpdateStatus={handleUpdateStatus}
             />
           )}
           {activeTab === 'patients' && (
@@ -249,7 +265,7 @@ const NavItem = ({ icon, label, active, onClick }) => (
 );
 
 // Overview View
-const OverviewView = ({ stats, appointments, loading, formatDate }) => (
+const OverviewView = ({ stats, appointments, loading }) => (
   <>
     {/* Stats Cards */}
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 animate-stagger">
@@ -320,35 +336,49 @@ const OverviewView = ({ stats, appointments, loading, formatDate }) => (
 );
 
 // Appointments View
-const AppointmentsView = ({ appointments, loading, formatDate, onUpdateStatus }) => (
-  <div className="bg-white p-6 rounded-xl shadow-md">
-    <h2 className="text-2xl font-bold mb-6">All Appointments</h2>
-    {loading ? (
-      <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600 mx-auto"></div>
+const AppointmentsView = ({ appointments, loading, formatDate, onUpdateStatus, onStartSession }) => {
+  const [filter, setFilter] = useState('all');
+  const filtered = filter === 'all' ? appointments : appointments.filter(a => a.status === filter);
+  return (
+    <div className="bg-white p-6 rounded-xl shadow-md">
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-3">
+        <h2 className="text-2xl font-bold">All Appointments</h2>
+        <div className="flex gap-2 flex-wrap">
+          {['all','Pending','Confirmed','Completed','Cancelled'].map(s => (
+            <button key={s} onClick={() => setFilter(s)}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition ${
+                filter === s ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 text-gray-600 hover:border-green-400'
+              }`}>
+              {s === 'all' ? 'All' : s}
+            </button>
+          ))}
+        </div>
       </div>
-    ) : appointments.length > 0 ? (
-      <div className="space-y-3">
-        {appointments.map((apt) => (
-          <AppointmentCard 
-            key={apt._id}
-            id={apt._id}
-            patient={apt.patientName} 
-            time={`${apt.appointmentTime}, ${formatDate(apt.appointmentDate)}`} 
-            reason={apt.symptoms?.substring(0, 50) || 'Consultation'} 
-            status={apt.status}
-            onUpdateStatus={onUpdateStatus}
-          />
-        ))}
-      </div>
-    ) : (
-      <div className="text-center py-8">
-        <FaCalendarCheck className="text-gray-300 text-5xl mx-auto mb-4" />
-        <p className="text-gray-500">No appointments yet</p>
-      </div>
-    )}
-  </div>
-);
+      {loading ? (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600 mx-auto"></div>
+        </div>
+      ) : filtered.length > 0 ? (
+        <div className="space-y-3">
+          {filtered.map((apt) => (
+            <AppointmentCard
+              key={apt._id}
+              appointment={apt}
+              formatDate={formatDate}
+              onUpdateStatus={onUpdateStatus}
+              onStartSession={onStartSession}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8">
+          <FaCalendarCheck className="text-gray-300 text-5xl mx-auto mb-4" />
+          <p className="text-gray-500">No appointments found</p>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Patients View
 const PatientsView = ({ appointments, loading }) => {
@@ -513,23 +543,57 @@ const PatientQuickCard = ({ name, lastVisit, condition }) => (
   </div>
 );
 
-const AppointmentCard = ({ patient, time, reason, status }) => {
+const AppointmentCard = ({ appointment, formatDate, onUpdateStatus, onStartSession }) => {
+  const { _id, patientName, patientAge, patientGender, contactNumber, appointmentTime, appointmentDate, symptoms, status, prescription, doctorNotes } = appointment;
   const statusColors = {
     'Confirmed': 'bg-green-100 text-green-700',
-    'Pending': 'bg-yellow-100 text-yellow-700',
-    'Completed': 'bg-blue-100 text-blue-700'
+    'Pending':   'bg-yellow-100 text-yellow-700',
+    'Completed': 'bg-blue-100 text-blue-700',
+    'Cancelled': 'bg-red-100 text-red-700'
   };
   return (
-    <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start">
-        <div>
-          <p className="font-semibold text-gray-800">Patient: {patient}</p>
-          <p className="text-sm text-gray-600">Time: {time}</p>
-          <p className="text-sm text-gray-500">Reason: {reason}</p>
+    <div className="border rounded-xl p-4 hover:shadow-md transition-shadow">
+      <div className="flex justify-between items-start gap-4">
+        <div className="flex-1 space-y-1">
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-gray-800 text-base">{patientName}</p>
+            {patientAge && <span className="text-xs text-gray-500">({patientAge} yrs, {patientGender})</span>}
+          </div>
+          <p className="text-sm text-gray-600">🕐 {appointmentTime} &nbsp;|&nbsp; 📅 {formatDate(appointmentDate)}</p>
+          <p className="text-sm text-gray-500">🩺 <span className="font-medium">Symptoms:</span> {symptoms?.substring(0, 80)}{symptoms?.length > 80 ? '…' : ''}</p>
+          {contactNumber && <p className="text-xs text-gray-400">📞 {contactNumber}</p>}
+          {doctorNotes && <p className="text-xs text-indigo-600 mt-1">📝 Notes: {doctorNotes.substring(0, 60)}…</p>}
+          {prescription  && <p className="text-xs text-green-600">💊 Rx: {prescription.substring(0, 60)}…</p>}
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[status]}`}>
-          {status}
-        </span>
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100 text-gray-600'}`}>
+            {status}
+          </span>
+          {status === 'Pending' && (
+            <button
+              onClick={() => onUpdateStatus(_id, 'Confirmed')}
+              className="text-xs px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+            >
+              ✓ Confirm
+            </button>
+          )}
+          {(status === 'Confirmed' || status === 'Pending') && (
+            <button
+              onClick={() => onStartSession(appointment)}
+              className="text-xs px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
+            >
+              <FaVideo className="text-xs" /> Start Session
+            </button>
+          )}
+          {status !== 'Cancelled' && status !== 'Completed' && (
+            <button
+              onClick={() => onUpdateStatus(_id, 'Cancelled')}
+              className="text-xs px-3 py-1 border border-red-400 text-red-500 rounded-lg hover:bg-red-50 transition"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -585,6 +649,150 @@ const SettingItem = ({ label, value }) => (
   <div className="flex justify-between items-center p-3 border-b">
     <span className="text-gray-700 font-medium">{label}</span>
     <span className="text-gray-600">{value}</span>
+  </div>
+);
+
+/* ════════════════════════════════════════════════════
+   SESSION MODAL — doctor conducts the consultation
+════════════════════════════════════════════════════ */
+const SessionModal = ({ appointment, onClose, onComplete, onUpdateStatus }) => {
+  const [doctorNotes, setDoctorNotes] = useState(appointment.doctorNotes || '');
+  const [prescription, setPrescription] = useState(appointment.prescription || '');
+  const [saving, setSaving] = useState(false);
+
+  const {
+    _id, patientName, patientAge, patientGender,
+    contactNumber, appointmentTime, appointmentDate,
+    symptoms, notes: patientNotes, status
+  } = appointment;
+
+  const handleComplete = async () => {
+    setSaving(true);
+    try {
+      await onComplete(_id, doctorNotes, prescription);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleConfirm = async () => {
+    await onUpdateStatus(_id, 'Confirmed');
+    // update local display
+    appointment.status = 'Confirmed';
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-2xl flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <FaVideo /> Consultation Session
+            </h2>
+            <p className="text-blue-100 text-sm mt-0.5">{appointmentTime} &nbsp;|&nbsp; {new Date(appointmentDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
+          </div>
+          <button onClick={onClose} className="text-white text-2xl hover:text-blue-200 transition leading-none">&times;</button>
+        </div>
+
+        <div className="p-6 space-y-5">
+
+          {/* Patient Info */}
+          <div className="bg-blue-50 rounded-xl p-4">
+            <h3 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+              <FaUserInjured className="text-blue-600" /> Patient Details
+            </h3>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <Info label="Name"    value={patientName} />
+              <Info label="Age"     value={patientAge ? `${patientAge} years` : '—'} />
+              <Info label="Gender"  value={patientGender} />
+              <Info label="Contact" value={contactNumber} />
+            </div>
+          </div>
+
+          {/* Symptoms & Notes from patient */}
+          <div className="bg-yellow-50 rounded-xl p-4">
+            <h3 className="font-semibold text-yellow-800 mb-2 flex items-center gap-2">
+              <FaNotesMedical className="text-yellow-600" /> Reported Symptoms
+            </h3>
+            <p className="text-gray-700 text-sm whitespace-pre-wrap">{symptoms || '—'}</p>
+            {patientNotes && (
+              <>
+                <p className="font-medium text-yellow-700 mt-3 mb-1 text-sm">Patient Notes:</p>
+                <p className="text-gray-700 text-sm whitespace-pre-wrap">{patientNotes}</p>
+              </>
+            )}
+          </div>
+
+          {/* Doctor Fields */}
+          <div className="space-y-4">
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                <FaNotesMedical className="text-indigo-500" /> Doctor Notes / Diagnosis
+              </label>
+              <textarea
+                rows={4}
+                value={doctorNotes}
+                onChange={e => setDoctorNotes(e.target.value)}
+                placeholder="Write your clinical notes, diagnosis, follow-up instructions…"
+                className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none resize-none"
+              />
+            </div>
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                💊 Prescription
+              </label>
+              <textarea
+                rows={4}
+                value={prescription}
+                onChange={e => setPrescription(e.target.value)}
+                placeholder="e.g. Paracetamol 500mg – twice daily for 5 days, rest…"
+                className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none resize-none"
+              />
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-wrap justify-end gap-3 border-t pt-4">
+            {status === 'Pending' && (
+              <button
+                onClick={handleConfirm}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition"
+              >
+                ✓ Confirm Appointment
+              </button>
+            )}
+            <button
+              onClick={handleComplete}
+              disabled={saving}
+              className={`px-5 py-2 rounded-lg text-white text-sm font-medium transition flex items-center gap-2 ${
+                saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+              }`}
+            >
+              {saving ? (
+                <><span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" /> Saving…</>
+              ) : (
+                <><FaCheckCircle /> Complete Session</>
+              )}
+            </button>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-sm transition"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Info = ({ label, value }) => (
+  <div>
+    <p className="text-xs text-gray-500">{label}</p>
+    <p className="font-medium text-gray-800">{value || '—'}</p>
   </div>
 );
 
