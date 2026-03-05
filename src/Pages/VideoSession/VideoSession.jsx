@@ -6,9 +6,16 @@ import {
   FaUserMd, FaUser, FaSpinner, FaExpand, FaCompress
 } from 'react-icons/fa';
 import io from 'socket.io-client';
-import Peer from 'simple-peer';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+const ICE_CONFIG = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+  ],
+};
 
 const VideoSession = () => {
   const { appointmentId } = useParams();
@@ -22,11 +29,12 @@ const VideoSession = () => {
 
   /* ── refs ── */
   const socketRef    = useRef(null);
-  const peerRef      = useRef(null);
+  const pcRef        = useRef(null);   // RTCPeerConnection
   const localStream  = useRef(null);
   const localVideo   = useRef(null);
   const remoteVideo  = useRef(null);
   const chatEndRef   = useRef(null);
+  const targetSocketRef = useRef(null); // who we signal to
 
   /* ── state ── */
   const [connected, setConnected]       = useState(false);
@@ -46,47 +54,55 @@ const VideoSession = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  /* ── create peer helper ── */
-  const createPeer = useCallback((initiator, stream, targetSocketId) => {
-    console.log(`🔗 Creating peer - Initiator: ${initiator}, Target: ${targetSocketId}`);
-    
-    const peer = new Peer({
-      initiator,
-      trickle: true,
-      stream,
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-        ],
-      },
-    });
+  /* ── helpers ── */
+  const addSystemMsg = (text) => {
+    setMessages(prev => [...prev, { message: text, sender: 'System', timestamp: new Date().toISOString(), system: true }]);
+  };
 
-    peer.on('signal', (signal) => {
-      console.log('📤 Sending signal:', signal.type, 'to:', targetSocketId);
-      socketRef.current?.emit('signal', { to: targetSocketId, signal });
-    });
+  /* ── create RTCPeerConnection ── */
+  const createPC = useCallback((stream) => {
+    const pc = new RTCPeerConnection(ICE_CONFIG);
 
-    peer.on('stream', (remoteStream) => {
-      console.log('🎥 Received remote stream!');
-      if (remoteVideo.current) {
-        remoteVideo.current.srcObject = remoteStream;
+    // Add local tracks to connection
+    stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+    // When remote tracks arrive
+    pc.ontrack = (event) => {
+      console.log('🎥 Received remote track:', event.track.kind);
+      if (remoteVideo.current && event.streams[0]) {
+        remoteVideo.current.srcObject = event.streams[0];
       }
       setConnected(true);
       setWaiting(false);
-    });
+    };
 
-    peer.on('close', () => {
-      console.log('❌ Peer connection closed');
-      setConnected(false);
-      setCallEnded(true);
-    });
+    // Send ICE candidates to remote peer
+    pc.onicecandidate = (event) => {
+      if (event.candidate && targetSocketRef.current) {
+        console.log('📤 Sending ICE candidate');
+        socketRef.current?.emit('signal', {
+          to: targetSocketRef.current,
+          signal: { type: 'candidate', candidate: event.candidate },
+        });
+      }
+    };
 
-    peer.on('error', (err) => {
-      console.error('❌ Peer error:', err);
-    });
+    pc.oniceconnectionstatechange = () => {
+      console.log('🔗 ICE state:', pc.iceConnectionState);
+      if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+        setConnected(true);
+        setWaiting(false);
+      }
+      if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+        setConnected(false);
+      }
+      if (pc.iceConnectionState === 'closed') {
+        setConnected(false);
+        setCallEnded(true);
+      }
+    };
 
-    return peer;
+    return pc;
   }, []);
 
   /* ── initialise socket + media ── */
@@ -109,45 +125,65 @@ const VideoSession = () => {
           socket.emit('join-room', { roomId, userId, userName, role: userType });
         });
 
-        // Someone is already in the room → I am the initiator
-        socket.on('room-users', (users) => {
-          if (!mounted) return;
-          console.log('👥 Room users:', users);
-          if (users.length > 0) {
-            const target = users[0];
-            console.log('🚀 I am the initiator, connecting to:', target.userName);
-            setRemoteName(target.userName);
-            setRemoteRole(target.role);
-            setWaiting(false); // Other user is already in room
+        // Someone is already in the room → I am the initiator (create offer)
+        socket.on('room-users', async (users) => {
+          if (!mounted || users.length === 0) return;
+          const target = users[0];
+          console.log('🚀 I am the initiator, connecting to:', target.userName);
+          setRemoteName(target.userName);
+          setRemoteRole(target.role);
+          setWaiting(false);
 
-            const peer = createPeer(true, localStream.current, target.socketId);
-            peerRef.current = peer;
-          }
+          targetSocketRef.current = target.socketId;
+          const pc = createPC(localStream.current);
+          pcRef.current = pc;
+
+          // Create and send offer
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          console.log('📤 Sending offer');
+          socket.emit('signal', { to: target.socketId, signal: { type: 'offer', sdp: offer } });
         });
 
-        // A new user joins → I wait for their signal (I am responder)
+        // A new user joins → I wait for their offer
         socket.on('user-joined', ({ userName: name, role }) => {
           if (!mounted) return;
-          console.log('👤 User joined:', name, '- I will be the responder');
+          console.log('👤 User joined:', name, '- waiting for their offer');
           setRemoteName(name);
           setRemoteRole(role);
-          // Don't create peer yet - wait for their offer signal
         });
 
-        // Relay signaling data
-        socket.on('signal', ({ from, signal }) => {
+        // Relay signaling data (offer / answer / ICE candidates)
+        socket.on('signal', async ({ from, signal }) => {
+          if (!mounted) return;
           console.log('📡 Received signal from:', from, 'Type:', signal.type);
-          
-          if (peerRef.current) {
-            // Peer already exists, just signal it
-            peerRef.current.signal(signal);
-          } else {
-            // Peer not created yet — I'm the responder, create peer and signal
-            console.log('🔄 Creating responder peer');
-            const peer = createPeer(false, localStream.current, from);
-            peerRef.current = peer;
-            peer.signal(signal);
+
+          targetSocketRef.current = from;
+
+          if (signal.type === 'offer') {
+            // I'm the responder – create peer, set remote desc, send answer
+            const pc = createPC(localStream.current);
+            pcRef.current = pc;
+
+            await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            console.log('📤 Sending answer');
+            socket.emit('signal', { to: from, signal: { type: 'answer', sdp: answer } });
             setWaiting(false);
+
+          } else if (signal.type === 'answer') {
+            // I'm the initiator – set remote desc
+            if (pcRef.current) {
+              await pcRef.current.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+              console.log('✅ Answer set');
+            }
+
+          } else if (signal.type === 'candidate') {
+            // Add ICE candidate
+            if (pcRef.current) {
+              await pcRef.current.addIceCandidate(new RTCIceCandidate(signal.candidate));
+            }
           }
         });
 
@@ -157,9 +193,9 @@ const VideoSession = () => {
           setConnected(false);
           setCallEnded(true);
           addSystemMsg(`${name} has left the session`);
-          if (peerRef.current) {
-            peerRef.current.destroy();
-            peerRef.current = null;
+          if (pcRef.current) {
+            pcRef.current.close();
+            pcRef.current = null;
           }
           if (remoteVideo.current) remoteVideo.current.srcObject = null;
         });
@@ -180,17 +216,11 @@ const VideoSession = () => {
 
     return () => {
       mounted = false;
-      peerRef.current?.destroy();
-      peerRef.current = null;
+      if (pcRef.current) { pcRef.current.close(); pcRef.current = null; }
       localStream.current?.getTracks().forEach(t => t.stop());
       socketRef.current?.disconnect();
     };
-  }, [roomId, userId, userName, userType, createPeer]);
-
-  /* ── helpers ── */
-  const addSystemMsg = (text) => {
-    setMessages(prev => [...prev, { message: text, sender: 'System', timestamp: new Date().toISOString(), system: true }]);
-  };
+  }, [roomId, userId, userName, userType, createPC]);
 
   const toggleVideo = () => {
     const track = localStream.current?.getVideoTracks()[0];
@@ -203,8 +233,7 @@ const VideoSession = () => {
   };
 
   const endCall = () => {
-    peerRef.current?.destroy();
-    peerRef.current = null;
+    if (pcRef.current) { pcRef.current.close(); pcRef.current = null; }
     localStream.current?.getTracks().forEach(t => t.stop());
     socketRef.current?.disconnect();
     setCallEnded(true);
