@@ -585,6 +585,14 @@ const AppointmentCard = ({ appointment, formatDate, onUpdateStatus, onStartSessi
               <FaVideo className="text-xs" /> Start Session
             </button>
           )}
+          {(status === 'Confirmed' || status === 'Pending') && (
+            <Link
+              to={`/session/${_id}`}
+              className="text-xs px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center gap-1"
+            >
+              <FaVideo className="text-xs" /> Video Call
+            </Link>
+          )}
           {status !== 'Cancelled' && status !== 'Completed' && (
             <button
               onClick={() => onUpdateStatus(_id, 'Cancelled')}

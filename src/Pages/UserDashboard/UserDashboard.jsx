@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
+import {
   FaStethoscope, FaUserMd, FaPills, FaHeartbeat, FaBell, FaUserCircle, 
   FaRobot, FaQuestionCircle, FaPhoneAlt, FaSignOutAlt, FaCalendarAlt,
-  FaHospital, FaFileAlt, FaStar, FaClock, FaCheck, FaTimes, FaChartLine
+  FaHospital, FaFileAlt, FaStar, FaClock, FaCheck, FaTimes, FaChartLine,
+  FaVideo
 } from 'react-icons/fa';
 import axios from 'axios';
 import { API_Doctor, API_Appointment } from '../../Components/apis/apisUrl';
@@ -229,6 +230,7 @@ const UserDashboard = () => {
                     getUpcomingAppointments().map((apt) => (
                       <AppointmentCard 
                         key={apt._id}
+                        id={apt._id}
                         name={`Dr. ${apt.doctorId?.username || 'Unknown'}`} 
                         specialty={apt.doctorId?.specialization || 'Specialist'} 
                         time={`${apt.appointmentTime}, ${formatDate(apt.appointmentDate)}`} 
@@ -264,6 +266,7 @@ const UserDashboard = () => {
                     appointments.map((apt) => (
                       <AppointmentCard 
                         key={apt._id}
+                        id={apt._id}
                         name={`Dr. ${apt.doctorId?.username || 'Unknown'}`} 
                         specialty={apt.doctorId?.specialization || 'Specialist'} 
                         time={`${apt.appointmentTime}, ${formatDate(apt.appointmentDate)}`} 
@@ -412,11 +415,12 @@ const DoctorCard = ({ name, specialty, rating, experience, onBook }) => (
   </div>
 );
 
-const AppointmentCard = ({ name, specialty, time, status }) => {
+const AppointmentCard = ({ id, name, specialty, time, status }) => {
   const statusColors = {
     'Confirmed': 'bg-green-100 text-green-700',
     'Pending': 'bg-yellow-100 text-yellow-700',
-    'Cancelled': 'bg-red-100 text-red-700'
+    'Cancelled': 'bg-red-100 text-red-700',
+    'Completed': 'bg-blue-100 text-blue-700'
   };
   return (
     <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -429,9 +433,19 @@ const AppointmentCard = ({ name, specialty, time, status }) => {
             <span>{time}</span>
           </div>
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[status]}`}>
-          {status}
-        </span>
+        <div className="flex flex-col items-end gap-2">
+          <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[status]}`}>
+            {status}
+          </span>
+          {(status === 'Confirmed' || status === 'Pending') && id && (
+            <Link
+              to={`/session/${id}`}
+              className="text-xs px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center gap-1"
+            >
+              <FaVideo className="text-xs" /> Join Video
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -23,6 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
-# Ignore all files in the apis folder
-src/Components/apis/
+# Environment variables
+.env
+.env.local
+.env.production
 

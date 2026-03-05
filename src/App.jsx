@@ -18,6 +18,7 @@ import ContactUs from "./Pages/Contact/ContactUs";
 import NotFound from "./Pages/NotFound/NotFound";
 import PatientProfile from "./Pages/Profile/PatientProfile";
 import DoctorEditProfile from "./Pages/DoctorProfile/DoctorEditProfile";
+import VideoSession from "./Pages/VideoSession/VideoSession";
 import './index.css'; 
 
 function App() {
@@ -55,6 +56,11 @@ function App() {
                 <Route path="/doctor/edit-profile" element={<DoctorEditProfile />} />
                 <Route path="/hospital-admin" element={<HospitalAdmin />} />
                 <Route path="/system-admin" element={<SystemAdminDashboard />} />
+              </Route>
+
+              {/* Video Session — outside Layout for full-screen */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/session/:appointmentId" element={<VideoSession />} />
               </Route>
 
               {/* Catch-all route for 404 */}
