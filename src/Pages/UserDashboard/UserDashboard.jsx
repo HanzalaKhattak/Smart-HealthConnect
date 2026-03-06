@@ -8,7 +8,7 @@ import {
 } from 'react-icons/fa';
 import axios from 'axios';
 import { API_Doctor, API_Appointment } from '../../Components/apis/apisUrl';
-import { Get_All_Doctors, Get_Patient_Appointments } from '../../Components/apis/endpoints';
+import { Get_All_Doctors, Get_Patient_Appointments, Get_Patient_Prescriptions } from '../../Components/apis/endpoints';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -16,6 +16,7 @@ const UserDashboard = () => {
   const userId = localStorage.getItem('userId');
   const [activeTab, setActiveTab] = useState('overview');
   const [appointments, setAppointments] = useState([]);
+  const [prescriptions, setPrescriptions] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -56,6 +57,17 @@ const UserDashboard = () => {
         } catch (err) {
           console.log('No appointments found or error:', err);
           setAppointments([]);
+        }
+
+        // Fetch prescriptions
+        try {
+          const prescriptionsRes = await axios.get(`${API_Appointment}${Get_Patient_Prescriptions}/${userId}/prescriptions`);
+          const prescriptionsData = prescriptionsRes.data.prescriptions || [];
+          setPrescriptions(prescriptionsData);
+          setStats(prev => ({ ...prev, activePrescriptions: prescriptionsData.length }));
+        } catch (err) {
+          console.log('Error fetching prescriptions:', err);
+          setPrescriptions([]);
         }
       }
 
@@ -172,6 +184,7 @@ const UserDashboard = () => {
             <div className="flex border-b overflow-x-auto">
               <TabButton label="Overview" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
               <TabButton label="Appointments" active={activeTab === 'appointments'} onClick={() => setActiveTab('appointments')} />
+              <TabButton label="Prescriptions" active={activeTab === 'prescriptions'} onClick={() => setActiveTab('prescriptions')} />
               <TabButton label="Health Records" active={activeTab === 'records'} onClick={() => setActiveTab('records')} />
               <TabButton label="Doctors" active={activeTab === 'doctors'} onClick={() => setActiveTab('doctors')} />
             </div>
@@ -286,6 +299,40 @@ const UserDashboard = () => {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'prescriptions' && (
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-xl shadow-md">
+                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <FaPills className="text-green-600" /> My Prescriptions
+                </h3>
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600 mx-auto"></div>
+                  </div>
+                ) : prescriptions.length > 0 ? (
+                  <div className="space-y-4">
+                    {prescriptions.map((apt) => (
+                      <PrescriptionCard
+                        key={apt._id}
+                        doctorName={`Dr. ${apt.doctorId?.username || 'Unknown'}`}
+                        specialization={apt.doctorId?.specialization || 'Specialist'}
+                        date={apt.appointmentDate}
+                        prescription={apt.prescription}
+                        doctorNotes={apt.doctorNotes}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-10">
+                    <FaPills className="text-gray-300 text-5xl mx-auto mb-4" />
+                    <p className="text-gray-500">No prescriptions yet</p>
+                    <p className="text-sm text-gray-400 mt-1">Prescriptions will appear here after your doctor completes an appointment</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -447,6 +494,34 @@ const AppointmentCard = ({ id, name, specialty, time, status }) => {
           )}
         </div>
       </div>
+    </div>
+  );
+};
+
+const PrescriptionCard = ({ doctorName, specialization, date, prescription, doctorNotes }) => {
+  const formattedDate = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return (
+    <div className="border border-green-100 rounded-xl p-5 hover:shadow-md transition-shadow bg-green-50/30">
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <p className="font-bold text-gray-800 text-lg">{doctorName}</p>
+          <p className="text-sm text-green-600">{specialization}</p>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white border rounded-full px-3 py-1">
+          <FaCalendarAlt />
+          <span>{formattedDate}</span>
+        </div>
+      </div>
+      <div className="bg-white border border-green-100 rounded-lg p-4 mb-3">
+        <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">Prescription</p>
+        <p className="text-gray-700 text-sm whitespace-pre-line">{prescription}</p>
+      </div>
+      {doctorNotes && (
+        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+          <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">Doctor's Notes</p>
+          <p className="text-gray-700 text-sm whitespace-pre-line">{doctorNotes}</p>
+        </div>
+      )}
     </div>
   );
 };

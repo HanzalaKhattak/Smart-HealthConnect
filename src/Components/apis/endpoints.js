@@ -22,6 +22,7 @@ export const SuperAdmin_Login = '/authroute'
 export const Create_Appointment = '/create' // create appointment
 export const Get_All_Appointments = '/all' // get all appointments
 export const Get_Patient_Appointments = '/patient' // get patient appointments
+export const Get_Patient_Prescriptions = '/patient' // get patient prescriptions (append /:patientId/prescriptions)
 export const Get_Doctor_Appointments = '/doctor' // get doctor appointments
 export const Get_Doctor_Today_Appointments = '/doctor/:doctorId/today' // get today's appointments
 export const Update_Appointment = '/update' // update appointment
