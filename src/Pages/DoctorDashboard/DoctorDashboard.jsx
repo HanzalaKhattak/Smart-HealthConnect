@@ -588,6 +588,7 @@ const AppointmentCard = ({ appointment, formatDate, onUpdateStatus, onStartSessi
           {(status === 'Confirmed' || status === 'Pending') && (
             <Link
               to={`/session/${_id}`}
+              target='_blank'
               className="text-xs px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center gap-1"
             >
               <FaVideo className="text-xs" /> Video Call

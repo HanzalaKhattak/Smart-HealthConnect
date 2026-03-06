@@ -2,9 +2,9 @@ import { GoogleGenAI } from "@google/genai";
 import React, { useState } from 'react';
 
 const AiConsultant = () => {
-    const ai = new GoogleGenAI({ apiKey: "AIzaSyBV5KK7R3BdsVEOtGB-3YcGp08eYabCE_U" });
+  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
   const [chat, setChat] = useState([
-    { role: 'model', content: 'Hello!, What are the symptoms happening to you.' },
+    { role: 'model', content: 'Hello! What are the symptoms happening to you.' },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);

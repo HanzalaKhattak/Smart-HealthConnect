@@ -38,6 +38,14 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
 
+            {/* Routes WITHOUT Navbar/Footer */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/profile" element={<PatientProfile />} />
+              <Route path="/doctor/edit-profile" element={<DoctorEditProfile />} />
+              <Route path="/ai-consultation" element={<AiConsultant />} />
+              <Route path="/session/:appointmentId" element={<VideoSession />} />
+            </Route>
+
             <Route element={<Layout />}>
               {/* Public Routes within Layout */}
               <Route index element={<Home />} />
@@ -48,19 +56,11 @@ function App() {
 
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
-                <Route path="/dashboard" element={<UserDashboard />} />
-                <Route path="/profile" element={<PatientProfile />} />
-                <Route path="/ai-consultation" element={<AiConsultant />} />
-                {/* <Route path="/find-pharmacies" element={<NearbyPharmas />} /> */}
-                <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
-                <Route path="/doctor/edit-profile" element={<DoctorEditProfile />} />
-                <Route path="/hospital-admin" element={<HospitalAdmin />} />
                 <Route path="/system-admin" element={<SystemAdminDashboard />} />
-              </Route>
-
-              {/* Video Session — outside Layout for full-screen */}
-              <Route element={<ProtectedRoute />}>
-                <Route path="/session/:appointmentId" element={<VideoSession />} />
+                <Route path="/dashboard" element={<UserDashboard />} />
+                <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
+                <Route path="/hospital-admin" element={<HospitalAdmin />} />
+                {/* <Route path="/find-pharmacies" element={<NearbyPharmas />} /> */}
               </Route>
 
               {/* Catch-all route for 404 */}
