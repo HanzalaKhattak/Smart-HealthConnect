@@ -40,12 +40,12 @@ const FAQ = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 animate-fade-in">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 flex items-center justify-center gap-3 mb-4">
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 flex items-center justify-center gap-3 mb-3 sm:mb-4">
             <FaQuestion className="text-green-600" />
             Frequently Asked Questions
           </h1>
-          <p className="text-lg text-gray-600">Find answers to common questions about Smart HealthConnect</p>
+          <p className="text-base sm:text-lg text-gray-600">Find answers to common questions about Smart HealthConnect</p>
         </div>
 
         <div className="space-y-6">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   FaCalendarCheck, FaUserInjured, FaComments, FaNotesMedical, FaBell, FaUserMd,
   FaChartLine, FaSignOutAlt, FaClock, FaCheckCircle, FaStar, FaEdit,
-  FaFileMedical, FaUsers, FaClipboardList, FaCog, FaVideo
+  FaFileMedical, FaUsers, FaClipboardList, FaCog, FaVideo, FaBars
 } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -17,6 +17,7 @@ const DoctorDashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sessionAppointment, setSessionAppointment] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [stats, setStats] = useState({
     todayAppointments: 0,
     totalPatients: 0,
@@ -122,8 +123,13 @@ const DoctorDashboard = () => {
       </header> */}
 
       <div className="flex">
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+        )}
+
         {/* Sidebar Navigation */}
-        <aside className="w-64 bg-white shadow-lg min-h-screen p-6 hidden md:block">
+        <aside className={`fixed md:sticky top-0 left-0 z-50 w-64 bg-white shadow-lg min-h-screen h-screen overflow-y-auto p-6 transition-transform duration-300 md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <FaUserMd className="text-green-600 text-3xl" />
@@ -139,31 +145,31 @@ const DoctorDashboard = () => {
               icon={<FaChartLine />} 
               label="Dashboard" 
               active={activeTab === 'overview'}
-              onClick={() => setActiveTab('overview')}
+              onClick={() => { setActiveTab('overview'); setSidebarOpen(false); }}
             />
             <NavItem 
               icon={<FaCalendarCheck />} 
               label="My Appointments" 
               active={activeTab === 'appointments'}
-              onClick={() => setActiveTab('appointments')}
+              onClick={() => { setActiveTab('appointments'); setSidebarOpen(false); }}
             />
             <NavItem 
               icon={<FaUserInjured />} 
               label="Patient Records" 
               active={activeTab === 'patients'}
-              onClick={() => setActiveTab('patients')}
+              onClick={() => { setActiveTab('patients'); setSidebarOpen(false); }}
             />
             <NavItem 
               icon={<FaNotesMedical />} 
               label="Prescriptions" 
               active={activeTab === 'prescriptions'}
-              onClick={() => setActiveTab('prescriptions')}
+              onClick={() => { setActiveTab('prescriptions'); setSidebarOpen(false); }}
             />
             <NavItem 
               icon={<FaComments />} 
               label="Messages" 
               active={activeTab === 'messages'}
-              onClick={() => setActiveTab('messages')}
+              onClick={() => { setActiveTab('messages'); setSidebarOpen(false); }}
             />
             <Link to="/doctor/edit-profile" className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 hover:text-green-600 transition-colors">
               <FaEdit /> Edit Profile
@@ -172,7 +178,7 @@ const DoctorDashboard = () => {
               icon={<FaCog />} 
               label="Settings" 
               active={activeTab === 'settings'}
-              onClick={() => setActiveTab('settings')}
+              onClick={() => { setActiveTab('settings'); setSidebarOpen(false); }}
             />
             
             <hr className="my-4" />
@@ -187,13 +193,21 @@ const DoctorDashboard = () => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-3 sm:p-6 min-w-0">
+          {/* Mobile header */}
+          <div className="md:hidden flex items-center gap-3 mb-4">
+            <button onClick={() => setSidebarOpen(true)} className="p-2 bg-white rounded-lg shadow">
+              <FaBars className="text-green-600 text-xl" />
+            </button>
+            <h2 className="text-lg font-bold text-gray-800">Doctor Panel</h2>
+          </div>
+
           {/* Header */}
-          <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-            <div className="flex justify-between items-center">
+          <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-6">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
               <div>
-                <h1 className="text-3xl font-bold text-gray-800">Welcome back, Dr. {doctorName}!</h1>
-                <p className="text-gray-600 mt-1">Here's your schedule and patient overview</p>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">Welcome back, Dr. {doctorName}!</h1>
+                <p className="text-gray-600 mt-1 text-sm sm:text-base">Here's your schedule and patient overview</p>
               </div>
               <div className="flex items-center gap-4">
                 <button className="relative p-3 bg-green-50 rounded-full hover:bg-green-100 transition-colors">
@@ -552,8 +566,8 @@ const AppointmentCard = ({ appointment, formatDate, onUpdateStatus, onStartSessi
     'Cancelled': 'bg-red-100 text-red-700'
   };
   return (
-    <div className="border rounded-xl p-4 hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start gap-4">
+    <div className="border rounded-xl p-3 sm:p-4 hover:shadow-md transition-shadow">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-4">
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2">
             <p className="font-semibold text-gray-800 text-base">{patientName}</p>

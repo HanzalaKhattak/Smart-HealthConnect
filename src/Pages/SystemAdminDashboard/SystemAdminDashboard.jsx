@@ -4,7 +4,7 @@ import {
   FaServer, FaUserShield, FaClinicMedical, FaUserMd, FaTools, FaChartPie,
   FaUsers, FaHospital, FaSignOutAlt, FaExclamationTriangle, FaCheck,
   FaCog, FaClipboardList, FaChartLine, FaBell, FaEdit, FaTrash, FaPlus,
-  FaEye, FaDatabase, FaShieldAlt, FaCalendarAlt
+  FaEye, FaDatabase, FaShieldAlt, FaCalendarAlt, FaBars
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { API_Doctor, API_User, API_Appointment, API_HospitalAdmin } from '../../Components/apis/apisUrl';
@@ -14,6 +14,7 @@ const SystemAdminDashboard = () => {
   const navigate = useNavigate();
   const [adminName, setAdminName] = useState('Admin');
   const [activeTab, setActiveTab] = useState('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Data states
   const [doctors, setDoctors] = useState([]);
@@ -136,8 +137,13 @@ const SystemAdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 animate-fade-in">
       <div className="flex">
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+        )}
+
         {/* Sidebar */}
-        <aside className="w-64 bg-white shadow-lg min-h-screen p-6 hidden md:block">
+        <aside className={`fixed md:sticky top-0 left-0 z-50 w-64 bg-white shadow-lg min-h-screen h-screen overflow-y-auto p-6 transition-transform duration-300 md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <FaUserShield className="text-purple-600 text-3xl" />
@@ -153,43 +159,43 @@ const SystemAdminDashboard = () => {
               icon={<FaChartPie />} 
               label="Dashboard" 
               active={activeTab === 'overview'}
-              onClick={() => setActiveTab('overview')}
+              onClick={() => { setActiveTab('overview'); setSidebarOpen(false); }}
             />
             <NavItem 
               icon={<FaHospital />} 
               label="Hospital Admins" 
               active={activeTab === 'hospitals'}
-              onClick={() => setActiveTab('hospitals')}
+              onClick={() => { setActiveTab('hospitals'); setSidebarOpen(false); }}
             />
             <NavItem 
               icon={<FaUserMd />} 
               label="Doctors" 
               active={activeTab === 'doctors'}
-              onClick={() => setActiveTab('doctors')}
+              onClick={() => { setActiveTab('doctors'); setSidebarOpen(false); }}
             />
             <NavItem 
               icon={<FaUsers />} 
               label="Patients" 
               active={activeTab === 'patients'}
-              onClick={() => setActiveTab('patients')}
+              onClick={() => { setActiveTab('patients'); setSidebarOpen(false); }}
             />
             <NavItem 
               icon={<FaCalendarAlt />} 
               label="Appointments" 
               active={activeTab === 'appointments'}
-              onClick={() => setActiveTab('appointments')}
+              onClick={() => { setActiveTab('appointments'); setSidebarOpen(false); }}
             />
             <NavItem 
               icon={<FaChartLine />} 
               label="Analytics" 
               active={activeTab === 'analytics'}
-              onClick={() => setActiveTab('analytics')}
+              onClick={() => { setActiveTab('analytics'); setSidebarOpen(false); }}
             />
             <NavItem 
               icon={<FaCog />} 
               label="Settings" 
               active={activeTab === 'settings'}
-              onClick={() => setActiveTab('settings')}
+              onClick={() => { setActiveTab('settings'); setSidebarOpen(false); }}
             />
             
             <hr className="my-4" />
@@ -204,13 +210,21 @@ const SystemAdminDashboard = () => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-3 sm:p-6 min-w-0">
+          {/* Mobile header */}
+          <div className="md:hidden flex items-center gap-3 mb-4">
+            <button onClick={() => setSidebarOpen(true)} className="p-2 bg-white rounded-lg shadow">
+              <FaBars className="text-purple-600 text-xl" />
+            </button>
+            <h2 className="text-lg font-bold text-gray-800">System Admin</h2>
+          </div>
+
           {/* Header */}
-          <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-            <div className="flex justify-between items-center">
+          <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-6">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
               <div>
-                <h1 className="text-3xl font-bold text-gray-800">System Administration</h1>
-                <p className="text-gray-600 mt-1">Monitor and manage the entire Smart HealthConnect platform</p>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">System Administration</h1>
+                <p className="text-gray-600 mt-1 text-sm sm:text-base">Monitor and manage the entire Smart HealthConnect platform</p>
               </div>
               <div className="flex items-center gap-4">
                 <button className="relative p-3 bg-purple-50 rounded-full hover:bg-purple-100 transition-colors">

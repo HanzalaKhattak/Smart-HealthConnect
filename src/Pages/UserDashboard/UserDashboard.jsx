@@ -4,7 +4,7 @@ import {
   FaStethoscope, FaUserMd, FaPills, FaHeartbeat, FaBell, FaUserCircle, 
   FaRobot, FaQuestionCircle, FaPhoneAlt, FaSignOutAlt, FaCalendarAlt,
   FaHospital, FaFileAlt, FaStar, FaClock, FaCheck, FaTimes, FaChartLine,
-  FaVideo
+  FaVideo, FaBars
 } from 'react-icons/fa';
 import axios from 'axios';
 import { API_Doctor, API_Appointment } from '../../Components/apis/apisUrl';
@@ -15,6 +15,7 @@ const UserDashboard = () => {
   const username = localStorage.getItem('username') || 'User';
   const userId = localStorage.getItem('userId');
   const [activeTab, setActiveTab] = useState('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [appointments, setAppointments] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -111,9 +112,16 @@ const UserDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 animate-fade-in">
-      <div className="flex">
+      <div className="flex relative">
+        {/* Mobile Sidebar Overlay */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+        )}
+
         {/* Sidebar Navigation */}
-        <aside className="w-64 bg-white shadow-md min-h-screen p-6 hidden md:block">
+        <aside className={`fixed md:sticky top-0 left-0 z-50 md:z-auto w-64 bg-white shadow-md min-h-screen p-6 transform transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } md:translate-x-0`}>
           <nav className="flex flex-col gap-2">
             <Link to="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-lg text-green-600 bg-green-50 font-semibold">
               <FaHeartbeat /> Dashboard
@@ -150,12 +158,24 @@ const UserDashboard = () => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 w-full min-w-0">
+          {/* Mobile Header with menu toggle */}
+          <div className="md:hidden flex items-center gap-3 mb-4">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 bg-white rounded-lg shadow text-gray-700"
+              aria-label="Open menu"
+            >
+              <FaBars />
+            </button>
+            <h2 className="text-lg font-bold text-gray-800">Dashboard</h2>
+          </div>
+
           {/* Welcome Card */}
-          <div className="bg-gradient-to-r from-green-600 to-green-700 p-6 rounded-xl shadow-lg mb-6 text-white">
-            <div className="flex justify-between items-start">
+          <div className="bg-gradient-to-r from-green-600 to-green-700 p-4 sm:p-6 rounded-xl shadow-lg mb-6 text-white">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
               <div>
-                <h2 className="text-3xl font-bold">Welcome back, {username}!</h2>
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold">Welcome back, {username}!</h2>
                 <p className="text-green-100 mt-2">Hope you're feeling well today</p>
                 <Link 
                   to="/ai-consultation"
@@ -172,7 +192,7 @@ const UserDashboard = () => {
           </div>
 
           {/* Health Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
             <HealthStatCard icon={<FaCalendarAlt />} label="Appointments" value={stats.appointmentsThisMonth.toString()} sublabel="This Month" />
             <HealthStatCard icon={<FaFileAlt />} label="Health Records" value={stats.healthRecords.toString()} sublabel="Documents" />
             <HealthStatCard icon={<FaPills />} label="Prescriptions" value={stats.activePrescriptions.toString()} sublabel="Active" />
@@ -180,8 +200,8 @@ const UserDashboard = () => {
           </div>
 
           {/* Tab Navigation */}
-          <div className="bg-white rounded-xl shadow-md mb-6">
-            <div className="flex border-b overflow-x-auto">
+          <div className="bg-white rounded-xl shadow-md mb-6 overflow-x-auto">
+            <div className="flex border-b min-w-max">
               <TabButton label="Overview" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
               <TabButton label="Appointments" active={activeTab === 'appointments'} onClick={() => setActiveTab('appointments')} />
               <TabButton label="Prescriptions" active={activeTab === 'prescriptions'} onClick={() => setActiveTab('prescriptions')} />
@@ -194,7 +214,7 @@ const UserDashboard = () => {
           {activeTab === 'overview' && (
             <>
               {/* Quick Actions */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6 animate-stagger">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-6 animate-stagger">
                 <ActionCard icon={<FaRobot />} label="AI Checker" onClick={() => navigate('/ai-consultation')} />
                 <ActionCard icon={<FaStethoscope />} label="Book Appointment" onClick={() => navigate('/book-appointment')} />
                 <ActionCard icon={<FaPills />} label="Order Medicines" onClick={() => navigate('/find-pharmacies')} />

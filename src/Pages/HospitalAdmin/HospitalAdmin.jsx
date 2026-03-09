@@ -4,7 +4,7 @@ import axios from 'axios';
 import { 
   FaHospital, FaUserMd, FaUsers, FaCalendarAlt, FaFileMedical, FaCog, 
   FaChartLine, FaBell, FaSignOutAlt, FaCheckCircle, FaTimes, FaEye,
-  FaPlus, FaEdit, FaTrash, FaSearch, FaFilter, FaClock, FaMoneyBillWave
+  FaPlus, FaEdit, FaTrash, FaSearch, FaFilter, FaClock, FaMoneyBillWave, FaBars
 } from 'react-icons/fa';
 import { API_Doctor, API_User, API_Appointment } from '../../Components/apis/apisUrl';
 import { Get_All_Doctors, Get_All_Users, Get_All_Appointments } from '../../Components/apis/endpoints';
@@ -14,6 +14,7 @@ const HospitalAdminDashboard = () => {
   const [adminName, setAdminName] = useState('Admin');
   const [hospitalName, setHospitalName] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Data states
   const [doctors, setDoctors] = useState([]);
@@ -127,8 +128,13 @@ const HospitalAdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 animate-fade-in">
       <div className="flex">
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+        )}
+
         {/* Sidebar */}
-        <aside className="w-64 bg-white shadow-lg min-h-screen p-6 hidden md:block">
+        <aside className={`fixed md:sticky top-0 left-0 z-50 w-64 bg-white shadow-lg min-h-screen h-screen overflow-y-auto p-6 transition-transform duration-300 md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <FaHospital className="text-green-600 text-3xl" />
@@ -144,37 +150,37 @@ const HospitalAdminDashboard = () => {
               icon={<FaChartLine />} 
               label="Dashboard" 
               active={activeTab === 'dashboard'}
-              onClick={() => setActiveTab('dashboard')}
+              onClick={() => { setActiveTab('dashboard'); setSidebarOpen(false); }}
             />
             <NavItem 
               icon={<FaUserMd />} 
               label="Manage Doctors" 
               active={activeTab === 'doctors'}
-              onClick={() => setActiveTab('doctors')}
+              onClick={() => { setActiveTab('doctors'); setSidebarOpen(false); }}
             />
             <NavItem 
               icon={<FaUsers />} 
               label="Manage Patients" 
               active={activeTab === 'patients'}
-              onClick={() => setActiveTab('patients')}
+              onClick={() => { setActiveTab('patients'); setSidebarOpen(false); }}
             />
             <NavItem 
               icon={<FaCalendarAlt />} 
               label="Appointments" 
               active={activeTab === 'appointments'}
-              onClick={() => setActiveTab('appointments')}
+              onClick={() => { setActiveTab('appointments'); setSidebarOpen(false); }}
             />
             <NavItem 
               icon={<FaFileMedical />} 
               label="Reports & Analytics" 
               active={activeTab === 'reports'}
-              onClick={() => setActiveTab('reports')}
+              onClick={() => { setActiveTab('reports'); setSidebarOpen(false); }}
             />
             <NavItem 
               icon={<FaCog />} 
               label="Settings" 
               active={activeTab === 'settings'}
-              onClick={() => setActiveTab('settings')}
+              onClick={() => { setActiveTab('settings'); setSidebarOpen(false); }}
             />
             
             <hr className="my-4" />
@@ -189,11 +195,19 @@ const HospitalAdminDashboard = () => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-3 sm:p-6 min-w-0">
+          {/* Mobile header */}
+          <div className="md:hidden flex items-center gap-3 mb-4">
+            <button onClick={() => setSidebarOpen(true)} className="p-2 bg-white rounded-lg shadow">
+              <FaBars className="text-green-600 text-xl" />
+            </button>
+            <h2 className="text-lg font-bold text-gray-800">Hospital Admin</h2>
+          </div>
+
           {/* Welcome */}
-          <div className="bg-white p-6 rounded-xl shadow mb-6">
-            <h2 className="text-2xl font-semibold">Welcome, {adminName}</h2>
-            <p className="text-gray-600">Here's an overview of the hospital's performance and activity.</p>
+          <div className="bg-white p-4 sm:p-6 rounded-xl shadow mb-6">
+            <h2 className="text-xl sm:text-2xl font-semibold">Welcome, {adminName}</h2>
+            <p className="text-gray-600 text-sm sm:text-base">Here's an overview of the hospital's performance and activity.</p>
           </div>
 
           {/* Content based on active tab */}

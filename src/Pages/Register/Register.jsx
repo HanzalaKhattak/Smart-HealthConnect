@@ -163,15 +163,15 @@ const RegisterForm = () => {
         />
       )}
       
-      <div className="max-w-xl w-full p-8 bg-white shadow-xl rounded-2xl animate-fade-in">
+      <div className="max-w-xl w-full p-5 sm:p-8 bg-white shadow-xl rounded-2xl animate-fade-in">
         {/* Back to Home Link */}
-        <Link to="/" className="inline-flex items-center gap-2 text-gray-600 hover:text-green-600 mb-6 transition-colors">
+        <Link to="/" className="inline-flex items-center gap-2 text-gray-600 hover:text-green-600 mb-4 sm:mb-6 transition-colors">
           <FaArrowLeft />
           <span>Back to Home</span>
         </Link>
 
-        <h2 className="text-3xl font-bold text-center mb-2 text-gray-800">Create Account</h2>
-        <p className="text-center text-gray-500 mb-6">Join Smart HealthConnect today</p>
+        <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2 text-gray-800">Create Account</h2>
+        <p className="text-center text-gray-500 mb-4 sm:mb-6 text-sm sm:text-base">Join Smart HealthConnect today</p>
 
         {/* User Type Selection */}
         <div className="mb-6">

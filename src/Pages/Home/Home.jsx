@@ -93,16 +93,16 @@ const Home = () => {
               <p className="text-gray-600 text-lg mb-6">
                 Access quality healthcare services from anywhere, anytime. Connect with doctors, find hospitals, and get AI-powered health guidance.
               </p>
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <button
                   onClick={handleGetStarted}
-                  className='bg-gradient-to-r from-green-600 to-green-700 text-white text-lg font-semibold px-8 py-3 rounded-lg hover:scale-105 transition-all duration-200 shadow-md hover:shadow-xl'
+                  className='bg-gradient-to-r from-green-600 to-green-700 text-white text-base sm:text-lg font-semibold px-6 sm:px-8 py-3 rounded-lg hover:scale-105 transition-all duration-200 shadow-md hover:shadow-xl'
                 >
                   {isAuthenticated ? 'Go to Dashboard' : 'Get Started Free'}
                 </button>
                 <button
                   onClick={scrollToServices}
-                  className='bg-white text-green-600 border-2 border-green-600 text-lg font-semibold px-8 py-3 rounded-lg hover:bg-green-50 transition-all duration-200'
+                  className='bg-white text-green-600 border-2 border-green-600 text-base sm:text-lg font-semibold px-6 sm:px-8 py-3 rounded-lg hover:bg-green-50 transition-all duration-200'
                 >
                   Learn More
                 </button>
@@ -129,7 +129,7 @@ const Home = () => {
       <section className="py-12 px-4 bg-gray-50" ref={servicesRef}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-3">Our Services</h2>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3">Our Services</h2>
             <p className="text-gray-600 text-lg">Comprehensive healthcare solutions at your fingertips</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-stagger">
@@ -156,7 +156,7 @@ const Home = () => {
       {/* Why Choose Us */}
       <section className="py-16 px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-12">Why Choose Smart HealthConnect?</h2>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 md:mb-12">Why Choose Smart HealthConnect?</h2>
           <div className="grid md:grid-cols-3 gap-8">
             <BenefitCard 
               icon={<FaCheckCircle className="text-4xl" />}
@@ -180,7 +180,7 @@ const Home = () => {
       {/* Testimonials */}
       <section className="py-16 px-4 bg-gradient-to-r from-green-50 to-blue-50">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-12">What Our Users Say</h2>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 md:mb-12">What Our Users Say</h2>
           <div className="grid md:grid-cols-3 gap-8">
             <TestimonialCard 
               name="Sarah Ahmed"
@@ -214,9 +214,9 @@ const Home = () => {
 
       {/* CTA Section */}
       <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-12 text-center text-white shadow-xl">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-xl mb-8 text-green-100">Join thousands of users who trust Smart HealthConnect for their healthcare needs</p>
+        <div className="max-w-4xl mx-auto bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-6 sm:p-8 md:p-12 text-center text-white shadow-xl">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">Ready to Get Started?</h2>
+          <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 text-green-100">Join thousands of users who trust Smart HealthConnect for their healthcare needs</p>
           <button
             onClick={handleGetStarted}
             className="bg-white text-green-600 text-lg font-semibold px-10 py-4 rounded-lg hover:bg-gray-100 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"

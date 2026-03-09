@@ -62,12 +62,12 @@ const About = () => {
     <div className="bg-gradient-to-br from-white to-gray-50 min-h-screen animate-fade-in">
       
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-green-600 to-green-700 text-white py-16 px-6">
+      <div className="bg-gradient-to-r from-green-600 to-green-700 text-white py-10 sm:py-16 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-4 animate-slide-up">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 animate-slide-up">
             About Smart HealthConnect
           </h1>
-          <p className="text-xl text-green-100 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-xl text-green-100 max-w-3xl mx-auto leading-relaxed">
             A smart, AI-driven healthcare platform that connects people to doctors, pharmacies, and health resources — instantly and intelligently.
           </p>
         </div>
@@ -202,33 +202,33 @@ const About = () => {
 
         {/* Stats Section */}
         <section className="mb-16">
-          <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-12 text-white shadow-xl">
-            <h2 className="text-3xl font-bold text-center mb-10">Our Impact</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-6 sm:p-12 text-white shadow-xl">
+            <h2 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-10">Our Impact</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
               <div className="text-center">
-                <div className="text-5xl font-bold mb-2">500+</div>
-                <div className="text-green-100">Verified Doctors</div>
+                <div className="text-3xl sm:text-5xl font-bold mb-2">500+</div>
+                <div className="text-green-100 text-sm sm:text-base">Verified Doctors</div>
               </div>
               <div className="text-center">
-                <div className="text-5xl font-bold mb-2">50+</div>
-                <div className="text-green-100">Partner Hospitals</div>
+                <div className="text-3xl sm:text-5xl font-bold mb-2">50+</div>
+                <div className="text-green-100 text-sm sm:text-base">Partner Hospitals</div>
               </div>
               <div className="text-center">
-                <div className="text-5xl font-bold mb-2">10,000+</div>
-                <div className="text-green-100">Happy Patients</div>
+                <div className="text-3xl sm:text-5xl font-bold mb-2">10,000+</div>
+                <div className="text-green-100 text-sm sm:text-base">Happy Patients</div>
               </div>
               <div className="text-center">
-                <div className="text-5xl font-bold mb-2">24/7</div>
-                <div className="text-green-100">Support Available</div>
+                <div className="text-3xl sm:text-5xl font-bold mb-2">24/7</div>
+                <div className="text-green-100 text-sm sm:text-base">Support Available</div>
               </div>
             </div>
           </div>
         </section>
 
         {/* Future Vision */}
-        <section className="text-center bg-white rounded-2xl shadow-lg p-12">
-          <h2 className="text-3xl font-bold text-gray-800 mb-6">Looking Ahead</h2>
-          <p className="text-gray-700 text-lg max-w-3xl mx-auto leading-relaxed mb-6">
+        <section className="text-center bg-white rounded-2xl shadow-lg p-6 sm:p-12">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 sm:mb-6">Looking Ahead</h2>
+          <p className="text-gray-700 text-base sm:text-lg max-w-3xl mx-auto leading-relaxed mb-4 sm:mb-6">
             As we grow, Smart HealthConnect envisions expanding our nationwide presence, partnering with more healthcare providers, and continuously enhancing our AI capabilities to build a truly connected, intelligent, and inclusive health ecosystem for all.
           </p>
           <div className="flex flex-wrap justify-center gap-4 mt-8">

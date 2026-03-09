@@ -308,11 +308,11 @@ const VideoSession = () => {
     <div className="h-screen bg-gray-900 flex flex-col overflow-hidden">
 
       {/* ── Top Bar ── */}
-      <div className="bg-gray-800 px-4 py-2 flex items-center justify-between shrink-0 z-10">
-        <div className="flex items-center gap-3">
-          <FaVideo className="text-green-400" />
-          <span className="text-white font-semibold text-sm">Smart HealthConnect — Video Session</span>
-          <span className="bg-gray-700 text-gray-300 text-xs px-2 py-0.5 rounded-full">Room: {appointmentId?.substring(0, 8)}...</span>
+      <div className="bg-gray-800 px-3 sm:px-4 py-2 flex items-center justify-between shrink-0 z-10">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <FaVideo className="text-green-400 shrink-0" />
+          <span className="text-white font-semibold text-xs sm:text-sm truncate">Smart HealthConnect</span>
+          <span className="bg-gray-700 text-gray-300 text-xs px-2 py-0.5 rounded-full hidden sm:inline">Room: {appointmentId?.substring(0, 8)}...</span>
         </div>
         <div className="flex items-center gap-3">
           {connected && (
@@ -357,7 +357,7 @@ const VideoSession = () => {
           )}
 
           {/* Local video (picture-in-picture) */}
-          <div className="absolute bottom-24 right-4 w-48 h-36 rounded-xl overflow-hidden border-2 border-gray-600 shadow-xl z-10">
+          <div className="absolute bottom-24 right-2 sm:right-4 w-28 h-20 sm:w-48 sm:h-36 rounded-xl overflow-hidden border-2 border-gray-600 shadow-xl z-10">
             <video
               ref={localVideo}
               autoPlay
@@ -376,7 +376,7 @@ const VideoSession = () => {
           </div>
 
           {/* ── Bottom Controls ── */}
-          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-4 py-4 bg-gradient-to-t from-black/80 to-transparent z-10">
+          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-2 sm:gap-4 py-3 sm:py-4 bg-gradient-to-t from-black/80 to-transparent z-10">
             <ControlBtn
               icon={videoOn ? <FaVideo /> : <FaVideoSlash />}
               label={videoOn ? 'Camera On' : 'Camera Off'}
@@ -408,7 +408,7 @@ const VideoSession = () => {
 
         {/* ── Chat Panel ── */}
         {chatOpen && (
-          <div className="w-80 bg-gray-800 flex flex-col border-l border-gray-700 shrink-0">
+          <div className="fixed inset-0 sm:static sm:inset-auto w-full sm:w-80 bg-gray-800 flex flex-col border-l border-gray-700 shrink-0 z-20">
             {/* Chat header */}
             <div className="p-3 bg-gray-750 border-b border-gray-700 flex items-center justify-between">
               <h3 className="text-white font-semibold text-sm flex items-center gap-2">

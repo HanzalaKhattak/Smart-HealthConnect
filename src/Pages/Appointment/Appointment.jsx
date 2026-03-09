@@ -207,18 +207,18 @@ const Appointment = () => {
       
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8 animate-fade-in">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Book an Appointment</h1>
-          <p className="text-gray-600">Schedule your consultation with our expert doctors</p>
+        <div className="text-center mb-6 sm:mb-8 animate-fade-in">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-2">Book an Appointment</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Schedule your consultation with our expert doctors</p>
         </div>
 
         {/* Progress Steps */}
-        <div className="flex justify-center items-center mb-8">
-          <div className="flex items-center gap-4">
+        <div className="flex justify-center items-center mb-6 sm:mb-8">
+          <div className="flex items-center gap-2 sm:gap-4">
             <StepIndicator number={1} label="Select Doctor" active={step === 1} completed={step > 1} />
-            <div className={`h-1 w-16 ${step > 1 ? 'bg-green-600' : 'bg-gray-300'}`}></div>
+            <div className={`h-1 w-8 sm:w-16 ${step > 1 ? 'bg-green-600' : 'bg-gray-300'}`}></div>
             <StepIndicator number={2} label="Date & Time" active={step === 2} completed={step > 2} />
-            <div className={`h-1 w-16 ${step > 2 ? 'bg-green-600' : 'bg-gray-300'}`}></div>
+            <div className={`h-1 w-8 sm:w-16 ${step > 2 ? 'bg-green-600' : 'bg-gray-300'}`}></div>
             <StepIndicator number={3} label="Details" active={step === 3} completed={false} />
           </div>
         </div>
@@ -513,12 +513,12 @@ const Appointment = () => {
 // Step Indicator Component
 const StepIndicator = ({ number, label, active, completed }) => (
   <div className="flex flex-col items-center">
-    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
+    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm sm:text-base transition-all ${
       completed ? 'bg-green-600 text-white' : active ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-600'
     }`}>
       {completed ? <FaCheckCircle /> : number}
     </div>
-    <p className={`text-xs mt-2 font-medium ${
+    <p className={`text-[10px] sm:text-xs mt-1 sm:mt-2 font-medium ${
       active ? 'text-green-600' : 'text-gray-500'
     }`}>
       {label}

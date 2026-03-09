@@ -122,15 +122,15 @@ const DoctorEditProfile = () => {
 
   if (initialLoading) {
     return (
-      <div className="max-w-4xl mx-auto p-8 mt-10 flex items-center justify-center">
+      <div className="max-w-4xl mx-auto p-4 sm:p-8 mt-4 sm:mt-10 flex items-center justify-center">
         <FaSpinner className="animate-spin text-green-600 text-4xl" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-8 mt-10 bg-white shadow-lg rounded-xl">
-      <h2 className="text-2xl font-bold text-center mb-6">Edit Doctor Profile</h2>
+    <div className="max-w-4xl mx-auto p-4 sm:p-8 mt-4 sm:mt-10 bg-white shadow-lg rounded-xl">
+      <h2 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6">Edit Doctor Profile</h2>
       
       {message && (
         <div className={`mb-4 p-3 text-center rounded-lg ${
