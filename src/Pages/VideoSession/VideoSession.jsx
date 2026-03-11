@@ -19,7 +19,8 @@ const fetchIceConfig = async () => {
     const response = await fetch(url);
     if (!response.ok) throw new Error('Failed to fetch ICE servers');
     const data = await response.json();
-    return { iceServers: data.iceServers };
+    // Metered API returns a plain array of ICE server objects
+    return { iceServers: Array.isArray(data) ? data : data.iceServers };
   } catch (error) {
     console.error('Error fetching ICE config:', error);
     // Fallback to public STUN
