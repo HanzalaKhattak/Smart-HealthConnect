@@ -9,33 +9,24 @@ import io from 'socket.io-client';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-// const ICE_CONFIG = {
-//   iceServers: [
-//     { urls: 'stun:stun.l.google.com:19302' },
-//     { urls: 'stun:stun1.l.google.com:19302' },
-//     { urls: 'stun:stun2.l.google.com:19302' },
-//   ],
-// };
-
-const ICE_CONFIG = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    {
-      urls: 'turn:openrelay.metered.ca:80',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-  ],
+// Dynamically fetch ICE server credentials from metered.ca
+const fetchIceConfig = async () => {
+  // Use Metered app name and API key from .env file
+  const appName = import.meta.env.VITE_METERED_APP_NAME;
+  const apiKey = import.meta.env.VITE_METERED_API_KEY;
+  const url = `https://${appName}.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to fetch ICE servers');
+    const data = await response.json();
+    return { iceServers: data.iceServers };
+  } catch (error) {
+    console.error('Error fetching ICE config:', error);
+    // Fallback to public STUN
+    return {
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+    };
+  }
 };
 
 const VideoSession = () => {
@@ -81,8 +72,9 @@ const VideoSession = () => {
   };
 
   /* ── create RTCPeerConnection ── */
-  const createPC = useCallback((stream) => {
-    const pc = new RTCPeerConnection(ICE_CONFIG);
+  const createPC = useCallback(async (stream) => {
+    const iceConfig = await fetchIceConfig();
+    const pc = new RTCPeerConnection(iceConfig);
 
     // Add local tracks to connection
     stream.getTracks().forEach(track => pc.addTrack(track, stream));
@@ -156,7 +148,7 @@ const VideoSession = () => {
           setWaiting(false);
 
           targetSocketRef.current = target.socketId;
-          const pc = createPC(localStream.current);
+          const pc = await createPC(localStream.current);
           pcRef.current = pc;
 
           // Create and send offer
@@ -183,7 +175,7 @@ const VideoSession = () => {
 
           if (signal.type === 'offer') {
             // I'm the responder – create peer, set remote desc, send answer
-            const pc = createPC(localStream.current);
+            const pc = await createPC(localStream.current);
             pcRef.current = pc;
 
             await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
