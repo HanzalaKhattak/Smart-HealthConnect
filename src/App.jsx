@@ -7,7 +7,7 @@ import Login from "./Pages/Login/Login";
 import Layout from "./Components/Layout";
 // import NearbyPharmas from "./Components/PharmasNearYou/NearbyPharmas";
 import AiConsultant from "./Components/AIAgent/AiConsultant";
-import ProtectedRoute from "./Pages/protectedRouteError/protectedRoutesErrorpage";
+import ProtectedRoute from "./Pages/protectedRouteError/ProtectedRoutesErrorpage";
 import Appointment from "./Pages/Appointment/Appointment";
 import UserDashboard from "./Pages/UserDashboard/UserDashboard";
 import DoctorDashboard from "./Pages/DoctorDashboard/DoctorDashboard";
