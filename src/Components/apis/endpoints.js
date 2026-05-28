@@ -1,31 +1,70 @@
-export const Add_User = '/postuser' //add new user
-export const Login_User = '/UserLogin' //login user 
-export const Get_User = '/getSpecificUser' // get specific user
-export const Update_User = '/updateUser' // update user
-export const Get_All_Users = '/getAllUser' // get all users
+// ───── Users / Patients ──────────────────────────────────
+export const Add_User = '/postuser';
+export const Login_User = '/UserLogin';
+export const Get_User = '/getSpecificUser';     // append /:UserId
+export const Update_User = '/updateUser';       // append /:UserId
+export const Get_All_Users = '/getAllUser';
+export const Delete_User = '/deleteUser';       // append /:UserId
+export const Me_User = '/me';
+export const Forgot_Password = '/password/forgot';
+export const Reset_Password = '/password/reset';
 
-export const Register_Doctor = '/registerDoctor' //register doctor
-export const Doctor_Login = '/loginDoctor' // Login Doctor
-export const Update_Doctor = '/UpdateDoctor' // update Doctor (append /:DoctorId)
-export const Get_All_Doctors = '/getAllDoctors' // get All doctors
-export const Get_Specific_Doctor = '/getDoctor' // get specific doctor (append /:DoctorId)
-export const Delete_Doctor = '/deleteDoc' // delete doctor
+// ───── Doctors ───────────────────────────────────────────
+export const Register_Doctor = '/registerDoctor';
+export const Doctor_Login = '/loginDoctor';
+export const Update_Doctor = '/UpdateDoctor';   // append /:DoctorId
+export const Get_All_Doctors = '/getAllDoctors';
+export const Get_Specific_Doctor = '/getDoctor'; // append /:DoctorId
+export const Delete_Doctor = '/deleteDoc';      // append /:_id
+export const Approve_Doctor = '/approve';       // append /:DoctorId
+export const Reject_Doctor = '/reject';         // append /:DoctorId
+export const Set_Availability = '/setAvailability'; // append /:DoctorId
+export const Get_Availability = '/getDoctor';   // append /:DoctorId/availability
+export const Get_Doctor_Reviews = '/getDoctor'; // append /:DoctorId/reviews
 
-export const Register_HospitalAdmin = '/registerHospitalAdmin' // register Hospital Admin
-export const HospitalAdmin_Login = '/loginHospitalAdmin' //Hospital Admin Login
-export const Get_All_HospitalAdmins = '/getAllHospAdmins' // get all hospital admins
+// ───── Hospital admins ───────────────────────────────────
+export const Register_HospitalAdmin = '/registerHospitalAdmin';
+export const HospitalAdmin_Login = '/loginHospitalAdmin';
+export const Get_All_HospitalAdmins = '/getAllHospAdmins';
 
-export const Register_SuperAdin = '/registerSuperAdmin';// register superadmin
-export const SuperAdmin_Login = '/authroute'
+// ───── Super / System admins ─────────────────────────────
+export const Register_SuperAdin = '/registerSuperAdmin';
+export const SuperAdmin_Login = '/authroute';
 
-// Appointment endpoints
-export const Create_Appointment = '/create' // create appointment
-export const Get_All_Appointments = '/all' // get all appointments
-export const Get_Patient_Appointments = '/patient' // get patient appointments
-export const Get_Patient_Prescriptions = '/patient' // get patient prescriptions (append /:patientId/prescriptions)
-export const Get_Doctor_Appointments = '/doctor' // get doctor appointments
-export const Get_Doctor_Today_Appointments = '/doctor/:doctorId/today' // get today's appointments
-export const Update_Appointment = '/update' // update appointment
-export const Cancel_Appointment = '/cancel' // cancel appointment
-export const Delete_Appointment = '/delete' // delete appointment
-export const Get_Appointment_Stats = '/stats' // get appointment statistics
+// ───── Appointments ──────────────────────────────────────
+export const Create_Appointment = '/create';
+export const Get_All_Appointments = '/all';
+export const Get_Patient_Appointments = '/patient';
+export const Get_Patient_Prescriptions = '/patient';
+export const Get_Doctor_Appointments = '/doctor';
+export const Get_Doctor_Today_Appointments = '/doctor/:doctorId/today';
+export const Update_Appointment = '/update';
+export const Cancel_Appointment = '/cancel';
+export const Reschedule_Appointment = '/reschedule';
+export const Rate_Appointment = '/rate';
+export const Delete_Appointment = '/delete';
+export const Get_Appointment_Stats = '/stats';
+export const Video_Start = '/video';            // append /:id/start
+export const Video_End = '/video';              // append /:id/end
+
+// ───── Hospitals ─────────────────────────────────────────
+export const Hospital_List = '/';
+export const Hospital_Get = '/';                // append /:id
+export const Hospital_Doctors = '/';            // append /:id/doctors
+
+// ───── Notifications ─────────────────────────────────────
+export const Notif_List = '/';
+export const Notif_MarkRead = '/';              // append /:id/read
+export const Notif_MarkAllRead = '/read-all';
+
+// ───── Reviews ───────────────────────────────────────────
+export const Review_Create = '/';
+export const Review_Doctor = '/doctor';         // append /:doctorId
+
+// ───── Medical records ───────────────────────────────────
+export const MR_Upload = '/upload';
+export const MR_ForPatient = '/patient';        // append /:patientId
+
+// ───── Payments ──────────────────────────────────────────
+export const Pay_Checkout = '/checkout';
+export const Pay_Confirm = '/confirm';
