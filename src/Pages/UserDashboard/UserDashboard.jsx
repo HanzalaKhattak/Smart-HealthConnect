@@ -40,7 +40,7 @@ const UserDashboard = () => {
       // Fetch appointments
       if (userId) {
         try {
-          const appointmentsRes = await axios.get(`${API_Appointment}${Get_Patient_Appointments}/${userId}`);
+          const appointmentsRes = await axios.get(`${API_Appointment}${Get_Patient_Appointments}/${userId}`, { headers });
           const appointmentsData = appointmentsRes.data.appointments || appointmentsRes.data || [];
           setAppointments(appointmentsData);
           
@@ -62,7 +62,7 @@ const UserDashboard = () => {
 
         // Fetch prescriptions
         try {
-          const prescriptionsRes = await axios.get(`${API_Appointment}${Get_Patient_Prescriptions}/${userId}/prescriptions`);
+          const prescriptionsRes = await axios.get(`${API_Appointment}${Get_Patient_Prescriptions}/${userId}/prescriptions`, { headers });
           const prescriptionsData = prescriptionsRes.data.prescriptions || [];
           setPrescriptions(prescriptionsData);
           setStats(prev => ({ ...prev, activePrescriptions: prescriptionsData.length }));

@@ -66,7 +66,10 @@ const DoctorDashboard = () => {
   const fetchAppointments = async (id) => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_Appointment}${Get_Doctor_Appointments}/${id}`);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_Appointment}${Get_Doctor_Appointments}/${id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       const appointmentsData = response.data.appointments || response.data || [];
       setAppointments(appointmentsData);
       
@@ -100,7 +103,10 @@ const DoctorDashboard = () => {
 
   const handleUpdateStatus = async (appointmentId, newStatus, extra = {}) => {
     try {
-      await axios.put(`${API_Appointment}${Update_Appointment}/${appointmentId}`, { status: newStatus, ...extra });
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_Appointment}${Update_Appointment}/${appointmentId}`, { status: newStatus, ...extra }, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       fetchAppointments(doctorId);
     } catch (error) {
       console.error('Error updating appointment:', error);
