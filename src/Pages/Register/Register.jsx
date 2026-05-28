@@ -48,10 +48,10 @@ const RegisterForm = () => {
     try {
       const res = await axios.post(url, newUserData);
       console.log(res);
-      showToast('Registration successful! Redirecting to login...', 'success');
+      showToast('Registration successful! ' + (userType === 'doctor' ? 'Your account is awaiting approval.' : 'Redirecting to login...'), 'success');
       setTimeout(() => {
         Nav('/login');
-      }, 2000);
+      }, 2500);
     } catch (err) {
       console.log(err);
       const errorMsg = err.response?.data?.msg || 'Registration failed. Please try again.';
@@ -66,8 +66,16 @@ const RegisterForm = () => {
     <>
       <input
         type="text"
-        name="username"
+        name="fullName"
         placeholder="Full Name"
+        onChange={handleChange}
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+        required
+      />
+      <input
+        type="text"
+        name="username"
+        placeholder="Username"
         onChange={handleChange}
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
         required
@@ -83,7 +91,7 @@ const RegisterForm = () => {
       <input
         type="password"
         name="password"
-        placeholder="Password"
+        placeholder="Password (min 8 chars, upper, lower, number)"
         onChange={handleChange}
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
         required

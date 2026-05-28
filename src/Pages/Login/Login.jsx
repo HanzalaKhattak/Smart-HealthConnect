@@ -3,11 +3,13 @@ import { FaUser, FaUserMd, FaHospital, FaTools, FaSpinner, FaArrowLeft } from 'r
 import { API_User, API_Doctor, API_HospitalAdmin, API_SuperAdmin } from '../../Components/apis/apisUrl';
 import { Login_User, Doctor_Login, HospitalAdmin_Login, SuperAdmin_Login } from '../../Components/apis/endpoints';
 import Toast from '../../Components/Toast/Toast';
-import axios from "axios";
-import { useNavigate, Link } from "react-router-dom";
+import axios from 'axios';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const Login = () => {
   const Nav = useNavigate();
+  const { login } = useAuth();
   const [userType, setUserType] = useState('');
   const [formData, setFormData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -41,16 +43,6 @@ const Login = () => {
       password: formData.password
     };
 
-    // Add specialization for doctor login
-    if (userType === 'doctor' && formData.specialization) {
-      loginData.specialization = formData.specialization;
-    }
-
-    if(userType === 'hospitalAdmin' && formData.hospitalName && formData.hospitalId) {
-      loginData.hospitalName = formData.hospitalName;
-      loginData.hospitalId = formData.hospitalId;
-    }
-
     let url = '';
     
     if (userType === 'doctor') {
@@ -71,44 +63,37 @@ const Login = () => {
       
       if (data) {
         showToast('Login successful! Redirecting...', 'success');
-        
-        // Store token and user info based on user type
+
+        const finalizeLogin = (account, type, redirectTo, tokenOverride) => {
+          const token = tokenOverride || data.token || data.User_Token;
+          localStorage.setItem('token', token);
+          localStorage.setItem('username', account?.fullName || account?.username || '');
+          localStorage.setItem('userInfo', account?.email || '');
+          localStorage.setItem('userId', account?._id || '');
+          localStorage.setItem('userType', type);
+          if (account?.hospitalName) localStorage.setItem('hospitalName', account.hospitalName);
+          login({ id: account?._id, username: account?.fullName || account?.username, email: account?.email, userType: type });
+          setTimeout(() => Nav(redirectTo), 1200);
+        };
+
         if (userType === 'doctor') {
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('username', data.LoginDoctor.fullName || data.LoginDoctor.username);
-          localStorage.setItem('userInfo', data.LoginDoctor.email);
-          localStorage.setItem('userId', data.LoginDoctor._id);
-          localStorage.setItem('userType', 'doctor');
-          setTimeout(() => Nav('/doctor-dashboard'), 1500);
+          finalizeLogin(data.LoginDoctor, 'doctor', '/doctor-dashboard');
         } else if (userType === 'hospitalAdmin') {
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('username', data.LoginHospitalAdmin.fullName || data.LoginHospitalAdmin.username);
-          localStorage.setItem('userInfo', data.LoginHospitalAdmin.email);
-          localStorage.setItem('userId', data.LoginHospitalAdmin._id);
-          localStorage.setItem('hospitalName', data.LoginHospitalAdmin.hospitalName || '');
-          localStorage.setItem('userType', 'hospitalAdmin');
-          setTimeout(() => Nav('/hospital-admin'), 1500);
+          finalizeLogin(data.LoginHospitalAdmin, 'hospitalAdmin', '/hospital-admin');
         } else if (userType === 'systemAdmin') {
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('username', data.LoginSuperAdmin.fullName || data.LoginSuperAdmin.username);
-          localStorage.setItem('userInfo', data.LoginSuperAdmin.email);
-          localStorage.setItem('userId', data.LoginSuperAdmin._id);
-          localStorage.setItem('userType', 'systemAdmin');
-          setTimeout(() => Nav('/system-admin'), 1500);
+          finalizeLogin(data.LoginSuperAdmin, 'systemAdmin', '/system-admin');
         } else {
-          localStorage.setItem('token', data.User_Token || data.token);
-          localStorage.setItem('username', data.LoginUser?.fullName || data.LoginUser?.username || data.username);
-          localStorage.setItem('userInfo', data.LoginUser?.email || data.email);
-          localStorage.setItem('userId', data.LoginUser?._id || '');
-          localStorage.setItem('userType', userType);
-          setTimeout(() => Nav('/dashboard'), 1500);
+          finalizeLogin(data.LoginUser, 'patient', '/dashboard', data.User_Token || data.token);
         }
-        
       }
     } catch (err) {
-      console.log("Login error:", err);
-      const errorMsg = err.response?.data?.wrn || err.response?.data?.msg || 'Login failed. Please check your credentials.';
-      showToast(errorMsg, 'error');
+      console.log('Login error:', err);
+      if (err.response?.data?.pendingApproval) {
+        showToast(err.response.data.wrn || 'Your account is awaiting approval.', 'error');
+      } else {
+        const errorMsg = err.response?.data?.wrn || err.response?.data?.msg || 'Login failed. Please check your credentials.';
+        showToast(errorMsg, 'error');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -206,38 +191,12 @@ const Login = () => {
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
               required
             />
-            {userType === 'doctor' && (
-              <input
-                type="text"
-                name="specialization"
-                placeholder="Specialization"
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                required
-              />
-            )}
+            <div className="text-right">
+              <Link to="/forgot-password" className="text-sm text-green-700 hover:underline">
+                Forgot password?
+              </Link>
+            </div>
 
-            {userType === 'hospitalAdmin' && (
-              <>
-                <input
-                  type="text"
-                  name="hospitalName"
-                  placeholder="Hospital Name"
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                  required
-                />
-                <input
-                  type="text"
-                  name="hospitalId"
-                  placeholder="Hospital ID"
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                  required
-                />
-              </>
-            )}
-            
             <button
               type="submit"
               disabled={isLoading}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { FaChevronDown, FaUser, FaQuestionCircle, FaBars, FaTimes } from 'react-icons/fa'
+import NotificationBell from './NotificationBell/NotificationBell'
 
 const NavBar = () => {
   const [tokenIs, settoken] = useState(null)
@@ -121,7 +122,9 @@ const NavBar = () => {
 
             {/* User Menu */}
             {tokenIs ? (
-              <div className="relative">
+              <div className="flex items-center space-x-3">
+                <NotificationBell />
+                <div className="relative">
                 <button
                   className="flex items-center space-x-2 text-gray-700 hover:text-green-600"
                   onMouseEnter={() => setShowUserMenu(true)}
@@ -141,9 +144,21 @@ const NavBar = () => {
                     <Link to={getDashboardPath()} className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
                       Dashboard
                     </Link>
-                    <Link to="/profile" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
-                      Profile
-                    </Link>
+                    {userType === 'patient' && (
+                      <>
+                        <Link to="/profile" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
+                          Profile
+                        </Link>
+                        <Link to="/medical-records" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
+                          Medical records
+                        </Link>
+                      </>
+                    )}
+                    {userType === 'doctor' && (
+                      <Link to="/doctor/edit-profile" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
+                        Edit profile
+                      </Link>
+                    )}
                     <hr className="my-1" />
                     <button
                       onClick={handlelogout}
@@ -153,6 +168,7 @@ const NavBar = () => {
                     </button>
                   </div>
                 )}
+                </div>
               </div>
             ) : (
               <div className="flex items-center space-x-4">

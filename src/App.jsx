@@ -1,25 +1,31 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Suspense } from 'react';
-import Home from "./Pages/Home/Home";
-import About from "./Pages/About/About";
-import Register from "./Pages/Register/Register";
-import Login from "./Pages/Login/Login";
-import Layout from "./Components/Layout";
-// import NearbyPharmas from "./Components/PharmasNearYou/NearbyPharmas";
-import AiConsultant from "./Components/AIAgent/AiConsultant";
-import ProtectedRoute from "./Pages/protectedRouteError/ProtectedRoutesErrorpage";
-import Appointment from "./Pages/Appointment/Appointment";
-import UserDashboard from "./Pages/UserDashboard/UserDashboard";
-import DoctorDashboard from "./Pages/DoctorDashboard/DoctorDashboard";
-import HospitalAdmin from "./Pages/HospitalAdmin/HospitalAdmin";
-import SystemAdminDashboard from "./Pages/SystemAdminDashboard/SystemAdminDashboard";
-import FAQ from "./Pages/FAQ/FAQ";
-import ContactUs from "./Pages/Contact/ContactUs";
-import NotFound from "./Pages/NotFound/NotFound";
-import PatientProfile from "./Pages/Profile/PatientProfile";
-import DoctorEditProfile from "./Pages/DoctorProfile/DoctorEditProfile";
-import VideoSession from "./Pages/VideoSession/VideoSession";
-import './index.css'; 
+import Home from './Pages/Home/Home';
+import About from './Pages/About/About';
+import Register from './Pages/Register/Register';
+import Login from './Pages/Login/Login';
+import ForgotPassword from './Pages/ForgotPassword/ForgotPassword';
+import ResetPassword from './Pages/ResetPassword/ResetPassword';
+import Layout from './Components/Layout';
+import AiConsultant from './Components/AIAgent/AiConsultant';
+import ProtectedRoute from './Pages/protectedRouteError/ProtectedRoutesErrorpage';
+import Appointment from './Pages/Appointment/Appointment';
+import UserDashboard from './Pages/UserDashboard/UserDashboard';
+import DoctorDashboard from './Pages/DoctorDashboard/DoctorDashboard';
+import HospitalAdmin from './Pages/HospitalAdmin/HospitalAdmin';
+import SystemAdminDashboard from './Pages/SystemAdminDashboard/SystemAdminDashboard';
+import FAQ from './Pages/FAQ/FAQ';
+import ContactUs from './Pages/Contact/ContactUs';
+import NotFound from './Pages/NotFound/NotFound';
+import PatientProfile from './Pages/Profile/PatientProfile';
+import DoctorEditProfile from './Pages/DoctorProfile/DoctorEditProfile';
+import VideoSession from './Pages/VideoSession/VideoSession';
+import FindDoctors from './Pages/FindDoctors/FindDoctors';
+import FindHospitals from './Pages/FindHospitals/FindHospitals';
+import FindPharmacies from './Pages/FindPharmacies/FindPharmacies';
+import Payment from './Pages/Payment/Payment';
+import MedicalRecords from './Pages/MedicalRecords/MedicalRecords';
+import './index.css';
 
 function App() {
   return (
@@ -34,14 +40,20 @@ function App() {
           </div>
         }>
           <Routes>
-            {/* Public Routes */}
+            {/* Public auth routes */}
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-            {/* Routes WITHOUT Navbar/Footer */}
-            <Route element={<ProtectedRoute />}>
+            {/* Authenticated routes WITHOUT Navbar/Footer */}
+            <Route element={<ProtectedRoute allowedRoles={['patient']} />}>
               <Route path="/profile" element={<PatientProfile />} />
+            </Route>
+            <Route element={<ProtectedRoute allowedRoles={['doctor']} />}>
               <Route path="/doctor/edit-profile" element={<DoctorEditProfile />} />
+            </Route>
+            <Route element={<ProtectedRoute />}>
               <Route path="/ai-consultation" element={<AiConsultant />} />
               <Route path="/session/:appointmentId" element={<VideoSession />} />
             </Route>
@@ -52,18 +64,34 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/contact" element={<ContactUs />} />
-              <Route path="/book-appointment" element={<Appointment />} />
+              <Route path="/find-doctors" element={<FindDoctors />} />
+              <Route path="/find-hospitals" element={<FindHospitals />} />
+              <Route path="/find-pharmacies" element={<FindPharmacies />} />
 
-              {/* Protected Routes */}
-              <Route element={<ProtectedRoute />}>
-                <Route path="/system-admin" element={<SystemAdminDashboard />} />
+              {/* Patient routes */}
+              <Route element={<ProtectedRoute allowedRoles={['patient']} />}>
+                <Route path="/book-appointment" element={<Appointment />} />
                 <Route path="/dashboard" element={<UserDashboard />} />
-                <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
-                <Route path="/hospital-admin" element={<HospitalAdmin />} />
-                {/* <Route path="/find-pharmacies" element={<NearbyPharmas />} /> */}
+                <Route path="/payment/:appointmentId" element={<Payment />} />
+                <Route path="/medical-records" element={<MedicalRecords />} />
               </Route>
 
-              {/* Catch-all route for 404 */}
+              {/* Doctor routes */}
+              <Route element={<ProtectedRoute allowedRoles={['doctor']} />}>
+                <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
+              </Route>
+
+              {/* Hospital admin routes */}
+              <Route element={<ProtectedRoute allowedRoles={['hospitalAdmin']} />}>
+                <Route path="/hospital-admin" element={<HospitalAdmin />} />
+              </Route>
+
+              {/* System admin routes */}
+              <Route element={<ProtectedRoute allowedRoles={['systemAdmin']} />}>
+                <Route path="/system-admin" element={<SystemAdminDashboard />} />
+              </Route>
+
+              {/* Catch-all */}
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
