@@ -7,7 +7,7 @@ import {
   FaPlus, FaEdit, FaTrash, FaSearch, FaFilter, FaClock, FaMoneyBillWave, FaBars
 } from 'react-icons/fa';
 import { API_Doctor, API_User, API_Appointment } from '../../Components/apis/apisUrl';
-import { Get_All_Doctors, Get_All_Users, Get_All_Appointments } from '../../Components/apis/endpoints';
+import { Get_All_Doctors, Get_All_Users, Get_All_Appointments, Approve_Doctor, Reject_Doctor } from '../../Components/apis/endpoints';
 
 const HospitalAdminDashboard = () => {
   const navigate = useNavigate();
@@ -47,10 +47,10 @@ const HospitalAdminDashboard = () => {
     let appointmentsList = [];
     
     try {
-      // Fetch all doctors
+      // Fetch all doctors (include pending for admin approval queue)
       try {
-        const doctorsRes = await axios.get(`${API_Doctor}${Get_All_Doctors}`);
-        doctorsList = doctorsRes.data.Doctors || doctorsRes.data || [];
+        const doctorsRes = await axios.get(`${API_Doctor}${Get_All_Doctors}?all=true&pending=true`, { headers });
+        doctorsList = doctorsRes.data.Doctors || doctorsRes.data.doctors || doctorsRes.data || [];
         setDoctors(doctorsList);
       } catch (err) {
         console.log('Error fetching doctors:', err);
@@ -112,6 +112,32 @@ const HospitalAdminDashboard = () => {
       day: 'numeric', 
       year: 'numeric' 
     });
+  };
+
+  const handleApproveDoctor = async (doctorId) => {
+    const token = localStorage.getItem('token');
+    try {
+      await axios.put(`${API_Doctor}${Approve_Doctor}/${doctorId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      await fetchAllData();
+    } catch (err) {
+      alert(err.response?.data?.msg || 'Failed to approve doctor');
+    }
+  };
+
+  const handleRejectDoctor = async (doctorId) => {
+    const reason = window.prompt('Reason for rejection (optional):', '');
+    if (reason === null) return;
+    const token = localStorage.getItem('token');
+    try {
+      await axios.put(`${API_Doctor}${Reject_Doctor}/${doctorId}`, { reason }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      await fetchAllData();
+    } catch (err) {
+      alert(err.response?.data?.msg || 'Failed to reject doctor');
+    }
   };
 
   const getRecentAppointments = () => {
@@ -224,6 +250,8 @@ const HospitalAdminDashboard = () => {
             <DoctorsView 
               doctors={doctors} 
               loading={loading}
+              onApprove={handleApproveDoctor}
+              onReject={handleRejectDoctor}
             />
           )}
           {activeTab === 'patients' && (
@@ -337,13 +365,10 @@ const DashboardView = ({ stats, appointments, doctors, loading, formatDate }) =>
 );
 
 // Doctors View - Dynamic
-const DoctorsView = ({ doctors, loading }) => (
+const DoctorsView = ({ doctors, loading, onApprove, onReject }) => (
   <div className="bg-white p-6 rounded-xl shadow-md">
     <div className="flex justify-between items-center mb-6">
       <h2 className="text-2xl font-bold">Manage Doctors</h2>
-      <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
-        <FaPlus /> Add Doctor
-      </button>
     </div>
     {loading ? (
       <div className="text-center py-8">
@@ -354,10 +379,9 @@ const DoctorsView = ({ doctors, loading }) => (
         {doctors.map((doc) => (
           <DoctorCard 
             key={doc._id}
-            name={`Dr. ${doc.fullName}`} 
-            specialty={doc.specialization || 'General'} 
-            patients={doc.patientCount || '0'} 
-            status={doc.isApproved !== false ? 'Active' : 'Pending'} 
+            doctor={doc}
+            onApprove={onApprove}
+            onReject={onReject}
           />
         ))}
       </div>
@@ -533,15 +557,30 @@ const DoctorApprovalCard = ({ name, specialty, license }) => (
   </div>
 );
 
-const DoctorCard = ({ name, specialty, patients, status }) => (
-  <div className="border rounded-lg p-4 flex justify-between items-center">
-    <div>
-      <p className="font-semibold">{name}</p>
-      <p className="text-sm text-gray-600">{specialty} • {patients} patients</p>
+const DoctorCard = ({ doctor, onApprove, onReject }) => {
+  const isPending = doctor.isApproved === false;
+  const name = `Dr. ${doctor.fullName || doctor.username || ''}`;
+  return (
+    <div className="border rounded-lg p-4 flex justify-between items-center gap-3 flex-wrap">
+      <div className="min-w-0">
+        <p className="font-semibold">{name}</p>
+        <p className="text-sm text-gray-600">{doctor.specialization || 'General'} • License: {doctor.licenseNumber || 'N/A'}</p>
+        <p className="text-xs text-gray-500">{doctor.email}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className={`px-3 py-1 rounded-full text-xs ${isPending ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+          {isPending ? 'Pending approval' : 'Active'}
+        </span>
+        {isPending && (
+          <>
+            <button onClick={() => onApprove && onApprove(doctor._id)} className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">Approve</button>
+            <button onClick={() => onReject && onReject(doctor._id)} className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700">Reject</button>
+          </>
+        )}
+      </div>
     </div>
-    <span className={`px-3 py-1 rounded-full text-xs ${status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{status}</span>
-  </div>
-);
+  );
+};
 
 const PatientCard = ({ name, age, lastVisit }) => (
   <div className="border rounded-lg p-4">

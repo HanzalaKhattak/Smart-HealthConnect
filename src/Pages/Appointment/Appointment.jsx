@@ -180,11 +180,17 @@ const Appointment = () => {
       );
       
       if (response.data.appointment) {
+        const appt = response.data.appointment;
+        const fee = Number(appt.consultationFee || 0);
         showToast('Appointment booked successfully!', 'success');
-        
+
         setTimeout(() => {
-          navigate('/dashboard');
-        }, 2000);
+          if (fee > 0 && appt.paymentStatus !== 'paid') {
+            navigate(`/payment/${appt._id}`);
+          } else {
+            navigate('/dashboard');
+          }
+        }, 1500);
       }
       
     } catch (error) {

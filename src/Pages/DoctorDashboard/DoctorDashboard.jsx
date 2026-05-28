@@ -6,8 +6,8 @@ import {
 } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { API_Appointment } from '../../Components/apis/apisUrl';
-import { Get_Doctor_Appointments, Update_Appointment } from '../../Components/apis/endpoints';
+import { API_Appointment, API_Doctor } from '../../Components/apis/apisUrl';
+import { Get_Doctor_Appointments, Update_Appointment, Get_Specific_Doctor, Set_Availability } from '../../Components/apis/endpoints';
 
 const DoctorDashboard = () => {
   const navigate = useNavigate();
@@ -18,6 +18,7 @@ const DoctorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [sessionAppointment, setSessionAppointment] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState({
     todayAppointments: 0,
     totalPatients: 0,
@@ -33,8 +34,34 @@ const DoctorDashboard = () => {
     
     if (id) {
       fetchAppointments(id);
+      fetchProfile(id);
     }
   }, []);
+
+  const fetchProfile = async (id) => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await axios.get(`${API_Doctor}${Get_Specific_Doctor}/${id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      setProfile(res.data.doctor || res.data.Doctor || res.data);
+    } catch (err) {
+      console.log('Error fetching doctor profile:', err);
+    }
+  };
+
+  const handleSaveAvailability = async (availability) => {
+    const token = localStorage.getItem('token');
+    try {
+      await axios.put(`${API_Doctor}${Set_Availability}/${doctorId}`, { availability }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      await fetchProfile(doctorId);
+      alert('Availability saved');
+    } catch (err) {
+      alert(err.response?.data?.msg || 'Failed to save availability');
+    }
+  };
 
   const fetchAppointments = async (id) => {
     try {
@@ -218,6 +245,14 @@ const DoctorDashboard = () => {
             </div>
           </div>
 
+          {/* Approval Pending Banner */}
+          {profile && profile.isApproved === false && (
+            <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-lg p-4 mb-6">
+              <p className="font-semibold">Your account is awaiting administrator approval.</p>
+              <p className="text-sm mt-1">Patients will not be able to book appointments with you until an admin approves your account.{profile.rejectionReason ? ` Note: ${profile.rejectionReason}` : ''}</p>
+            </div>
+          )}
+
           {/* Render content based on active tab */}
           {activeTab === 'overview' && (
             <OverviewView 
@@ -259,7 +294,7 @@ const DoctorDashboard = () => {
             />
           )}
           {activeTab === 'messages' && <MessagesView />}
-          {activeTab === 'settings' && <SettingsView />}
+          {activeTab === 'settings' && <SettingsView profile={profile} onSaveAvailability={handleSaveAvailability} />}
         </main>
       </div>
     </div>
@@ -496,22 +531,70 @@ const MessagesView = () => (
 );
 
 // Settings View
-const SettingsView = () => (
-  <div className="bg-white p-6 rounded-xl shadow-md">
-    <h2 className="text-2xl font-bold mb-6">Settings</h2>
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold mb-3">Availability</h3>
-        <div className="space-y-2">
-          <SettingItem label="Working Days" value="Mon - Fri" />
-          <SettingItem label="Working Hours" value="9:00 AM - 5:00 PM" />
-          <SettingItem label="Consultation Duration" value="30 minutes" />
-        </div>
+const SettingsView = ({ profile, onSaveAvailability }) => {
+  const initial = Array.isArray(profile?.availability) && profile.availability.length
+    ? profile.availability
+    : [{ day: 'Monday', startTime: '09:00', endTime: '17:00', slotDuration: 30 }];
+  const [rows, setRows] = useState(initial);
+
+  useEffect(() => {
+    if (Array.isArray(profile?.availability) && profile.availability.length) {
+      setRows(profile.availability);
+    }
+  }, [profile]);
+
+  const updateRow = (idx, field, value) => {
+    const copy = [...rows];
+    copy[idx] = { ...copy[idx], [field]: field === 'slotDuration' ? Number(value) : value };
+    setRows(copy);
+  };
+  const addRow = () => setRows([...rows, { day: 'Monday', startTime: '09:00', endTime: '17:00', slotDuration: 30 }]);
+  const removeRow = (idx) => setRows(rows.filter((_, i) => i !== idx));
+
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+  return (
+    <div className="bg-white p-6 rounded-xl shadow-md">
+      <h2 className="text-2xl font-bold mb-6">Availability</h2>
+      <div className="space-y-3">
+        {rows.map((row, idx) => (
+          <div key={idx} className="flex flex-wrap items-end gap-3 border rounded-lg p-3">
+            <div>
+              <label className="block text-xs text-gray-500">Day</label>
+              <select value={row.day} onChange={(e) => updateRow(idx, 'day', e.target.value)} className="border rounded px-2 py-1">
+                {days.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500">Start</label>
+              <input type="time" value={row.startTime} onChange={(e) => updateRow(idx, 'startTime', e.target.value)} className="border rounded px-2 py-1" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500">End</label>
+              <input type="time" value={row.endTime} onChange={(e) => updateRow(idx, 'endTime', e.target.value)} className="border rounded px-2 py-1" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500">Slot (min)</label>
+              <input type="number" min="5" max="180" value={row.slotDuration || 30} onChange={(e) => updateRow(idx, 'slotDuration', e.target.value)} className="border rounded px-2 py-1 w-20" />
+            </div>
+            <button onClick={() => removeRow(idx)} className="text-red-600 text-sm px-3 py-1 hover:bg-red-50 rounded">Remove</button>
+          </div>
+        ))}
       </div>
-      <button className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">Update Settings</button>
+      <div className="flex gap-3 mt-6">
+        <button onClick={addRow} className="px-4 py-2 border rounded-lg hover:bg-gray-50">+ Add slot</button>
+        <button onClick={() => onSaveAvailability(rows)} className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">Save availability</button>
+      </div>
+      {profile && (
+        <div className="mt-8 pt-6 border-t text-sm text-gray-600">
+          <p><b>Consultation fee:</b> {profile.consultationFee != null ? `Rs. ${profile.consultationFee}` : 'Not set'}</p>
+          <p><b>Specialization:</b> {profile.specialization || 'N/A'}</p>
+          <p className="mt-2 text-xs text-gray-500">Edit these details from your <Link to="/doctor/edit-profile" className="text-green-600 hover:underline">profile page</Link>.</p>
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 // Component Definitions
 const StatCard = ({ icon, title, count, color }) => {

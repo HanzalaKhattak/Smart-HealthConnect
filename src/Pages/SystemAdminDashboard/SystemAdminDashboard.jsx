@@ -8,7 +8,7 @@ import {
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { API_Doctor, API_User, API_Appointment, API_HospitalAdmin } from '../../Components/apis/apisUrl';
-import { Get_All_Doctors, Get_All_Users, Get_All_Appointments, Get_All_HospitalAdmins } from '../../Components/apis/endpoints';
+import { Get_All_Doctors, Get_All_Users, Get_All_Appointments, Get_All_HospitalAdmins, Approve_Doctor, Reject_Doctor } from '../../Components/apis/endpoints';
 
 const SystemAdminDashboard = () => {
   const navigate = useNavigate();
@@ -134,6 +134,32 @@ const SystemAdminDashboard = () => {
     navigate('/');
   };
 
+  const handleApproveDoctor = async (doctorId) => {
+    const token = localStorage.getItem('token');
+    try {
+      await axios.put(`${API_Doctor}${Approve_Doctor}/${doctorId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      await fetchAllData();
+    } catch (err) {
+      alert(err.response?.data?.msg || 'Failed to approve doctor');
+    }
+  };
+
+  const handleRejectDoctor = async (doctorId) => {
+    const reason = window.prompt('Reason for rejection (optional):', '');
+    if (reason === null) return;
+    const token = localStorage.getItem('token');
+    try {
+      await axios.put(`${API_Doctor}${Reject_Doctor}/${doctorId}`, { reason }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      await fetchAllData();
+    } catch (err) {
+      alert(err.response?.data?.msg || 'Failed to reject doctor');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 animate-fade-in">
       <div className="flex">
@@ -257,6 +283,8 @@ const SystemAdminDashboard = () => {
             <DoctorsView 
               doctors={doctors}
               loading={loading}
+              onApprove={handleApproveDoctor}
+              onReject={handleRejectDoctor}
             />
           )}
           {activeTab === 'patients' && (
@@ -410,13 +438,10 @@ const HospitalAdminsView = ({ admins, loading }) => (
 );
 
 // Doctors View - Dynamic
-const DoctorsView = ({ doctors, loading }) => (
+const DoctorsView = ({ doctors, loading, onApprove, onReject }) => (
   <div className="bg-white p-6 rounded-xl shadow-md">
     <div className="flex justify-between items-center mb-6">
       <h2 className="text-2xl font-bold">Doctors Management</h2>
-      <div className="flex gap-2">
-        <input type="text" placeholder="Search doctors..." className="border rounded-lg px-4 py-2" />
-      </div>
     </div>
     {loading ? (
       <div className="text-center py-8">
@@ -427,10 +452,9 @@ const DoctorsView = ({ doctors, loading }) => (
         {doctors.map((doc) => (
           <DoctorCard 
             key={doc._id}
-            name={`Dr. ${doc.fullName}`}
-            specialty={doc.specialization || 'General'}
-            hospital={doc.hospitalName || 'N/A'}
-            status={doc.isApproved !== false ? 'Active' : 'Pending'}
+            doctor={doc}
+            onApprove={onApprove}
+            onReject={onReject}
           />
         ))}
       </div>
@@ -617,25 +641,34 @@ const ActivityItem = ({ action, entity, time }) => (
   </div>
 );
 
-const DoctorCard = ({ name, specialty, hospital, status }) => {
+const DoctorCard = ({ doctor, name, specialty, hospital, status, onApprove, onReject }) => {
+  // Support both signatures: object `doctor` or flat props (for overview cards)
+  const isPending = doctor ? doctor.isApproved === false : status === 'Pending';
+  const displayName = doctor ? `Dr. ${doctor.fullName || doctor.username || ''}` : name;
+  const displaySpecialty = doctor ? (doctor.specialization || 'General') : specialty;
+  const displayHospital = doctor ? (doctor.hospitalName || doctor.hospitalId?.name || 'N/A') : hospital;
   const statusColors = {
     'Active': 'bg-green-100 text-green-700',
     'Pending': 'bg-yellow-100 text-yellow-700'
   };
+  const statusLabel = isPending ? 'Pending' : 'Active';
   return (
     <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-2">
         <div>
-          <p className="font-semibold text-gray-800">{name}</p>
-          <p className="text-sm text-gray-600">{specialty}</p>
-          <p className="text-xs text-gray-500 mt-1">{hospital}</p>
+          <p className="font-semibold text-gray-800">{displayName}</p>
+          <p className="text-sm text-gray-600">{displaySpecialty}</p>
+          <p className="text-xs text-gray-500 mt-1">{displayHospital}</p>
+          {doctor?.email && <p className="text-xs text-gray-400 mt-1">{doctor.email}</p>}
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100 text-gray-700'}`}>{status}</span>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[statusLabel] || 'bg-gray-100 text-gray-700'}`}>{statusLabel}</span>
       </div>
-      <div className="flex gap-2 mt-3">
-        <button className="flex-1 text-sm text-purple-600 hover:text-purple-700 font-medium">View</button>
-        <button className="flex-1 text-sm text-blue-600 hover:text-blue-700 font-medium">Edit</button>
-      </div>
+      {doctor && isPending && onApprove && onReject && (
+        <div className="flex gap-2 mt-3">
+          <button onClick={() => onApprove(doctor._id)} className="flex-1 text-sm bg-green-600 text-white py-1 rounded hover:bg-green-700">Approve</button>
+          <button onClick={() => onReject(doctor._id)} className="flex-1 text-sm bg-red-600 text-white py-1 rounded hover:bg-red-700">Reject</button>
+        </div>
+      )}
     </div>
   );
 };
