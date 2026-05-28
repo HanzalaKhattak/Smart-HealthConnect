@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import img2 from '../../Assets/AIAgentAssets/AIAgent.png';
+import img2 from '../../Assets/AIAgentAssets/AIAgent.webp';
 import { AiOutlineRobot } from 'react-icons/ai';
 
 const AIAgent = () => {
@@ -17,7 +17,7 @@ const AIAgent = () => {
       >
         <div className="flex flex-col gap-2 max-w-xl">
           <div className="flex items-center gap-2 text-green-600 mb-2">
-            <AiOutlineRobot className="text-3xl group-hover:scale-110 transition-transform" />
+            <AiOutlineRobot className="text-3xl group-hover:scale-110 transition-transform" aria-hidden="true" />
             <h2 className="text-2xl md:text-3xl font-bold group-hover:text-green-700 transition">Hello! I'm your AI Assistant</h2>
           </div>
           <p className="text-lg md:text-xl text-gray-700">
@@ -25,7 +25,7 @@ const AIAgent = () => {
           </p>
         </div>
         <div className="mt-4 md:mt-0 md:ml-8">
-          <img src={img2} alt="AI Assistant" className="w-40 md:w-48 drop-shadow group-hover:scale-105 transition-transform rounded-xl" />
+          <img src={img2} alt="AI Assistant" width={192} height={192} loading="lazy" className="w-40 md:w-48 drop-shadow group-hover:scale-105 transition-transform rounded-xl" />
         </div>
       </div>
     </div>

@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, lazy, Suspense } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { FaChevronDown, FaUser, FaQuestionCircle, FaBars, FaTimes } from 'react-icons/fa'
-import NotificationBell from './NotificationBell/NotificationBell'
+import { FaChevronDown, FaUser, FaBars, FaTimes } from 'react-icons/fa'
+
+const NotificationBell = lazy(() => import('./NotificationBell/NotificationBell'));
 
 const NavBar = () => {
   const [tokenIs, settoken] = useState(null)
@@ -51,7 +52,7 @@ const NavBar = () => {
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         <div className='flex justify-between items-center py-4'>
           <Link to="/" className="flex items-center space-x-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-green-600">Smart HealthConnect</h1>
+            <span className="text-xl sm:text-2xl font-bold text-green-600">Smart HealthConnect</span>
           </Link>
 
           {/* Mobile Hamburger Button */}
@@ -66,14 +67,14 @@ const NavBar = () => {
           {/* Desktop Navigation */}
           <div className='hidden md:flex items-center space-x-6'>
             <Link to="/"
-              className={`hover:text-green-600 ${isActive('/') ? 'text-green-600' : 'text-gray-700'}`}>
+              className={`hover:text-green-700 ${isActive('/') ? 'text-green-700' : 'text-gray-700'}`}>
               Home
             </Link>
 
             {/* Services Dropdown */}
             <div className="relative">
               <button
-                className="flex items-center space-x-1 text-gray-700 hover:text-green-600"
+                className="flex items-center space-x-1 text-gray-700 hover:text-green-700"
                 onMouseEnter={() => setShowServicesMenu(true)}
                 onMouseLeave={() => setShowServicesMenu(false)}
               >
@@ -86,19 +87,19 @@ const NavBar = () => {
                   className="absolute top-full right-0 w-56 bg-white border rounded-lg shadow-lg py-2 mt-1"
                   onMouseEnter={() => setShowServicesMenu(true)}
                   onMouseLeave={() => setShowServicesMenu(false)}
-                >                  <Link to="/ai-consultation" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
+                >                  <Link to="/ai-consultation" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">
                     AI Health Consultation
                   </Link>
-                  <Link to="/book-appointment" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
+                  <Link to="/book-appointment" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">
                     Book Appointment
                   </Link>
-                  <Link to="/find-doctors" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
+                  <Link to="/find-doctors" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">
                     Find Doctors
                   </Link>
-                  <Link to="/find-hospitals" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
+                  <Link to="/find-hospitals" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">
                     Find Hospitals
                   </Link>
-                  <Link to="/find-pharmacies" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
+                  <Link to="/find-pharmacies" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">
                     Find Pharmacies
                   </Link>
                 </div>
@@ -106,27 +107,27 @@ const NavBar = () => {
             </div>
 
             <Link to="/about"
-              className={`hover:text-green-600 ${isActive('/about') ? 'text-green-600' : 'text-gray-700'}`}>
+              className={`hover:text-green-700 ${isActive('/about') ? 'text-green-700' : 'text-gray-700'}`}>
               About
             </Link>
 
             <Link to="/faq"
-              className={`hover:text-green-600 ${isActive('/faq') ? 'text-green-600' : 'text-gray-700'}`}>
+              className={`hover:text-green-700 ${isActive('/faq') ? 'text-green-700' : 'text-gray-700'}`}>
               FAQ
             </Link>
 
             <Link to="/contact"
-              className={`hover:text-green-600 ${isActive('/contact') ? 'text-green-600' : 'text-gray-700'}`}>
+              className={`hover:text-green-700 ${isActive('/contact') ? 'text-green-700' : 'text-gray-700'}`}>
               Contact
             </Link>
 
             {/* User Menu */}
             {tokenIs ? (
               <div className="flex items-center space-x-3">
-                <NotificationBell />
+                <Suspense fallback={null}><NotificationBell /></Suspense>
                 <div className="relative">
                 <button
-                  className="flex items-center space-x-2 text-gray-700 hover:text-green-600"
+                  className="flex items-center space-x-2 text-gray-700 hover:text-green-700"
                   onMouseEnter={() => setShowUserMenu(true)}
                   onMouseLeave={() => setShowUserMenu(false)}
                 >
@@ -141,21 +142,21 @@ const NavBar = () => {
                     onMouseEnter={() => setShowUserMenu(true)}
                     onMouseLeave={() => setShowUserMenu(false)}
                   >
-                    <Link to={getDashboardPath()} className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
+                    <Link to={getDashboardPath()} className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">
                       Dashboard
                     </Link>
                     {userType === 'patient' && (
                       <>
-                        <Link to="/profile" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
+                        <Link to="/profile" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">
                           Profile
                         </Link>
-                        <Link to="/medical-records" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
+                        <Link to="/medical-records" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">
                           Medical records
                         </Link>
                       </>
                     )}
                     {userType === 'doctor' && (
-                      <Link to="/doctor/edit-profile" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600">
+                      <Link to="/doctor/edit-profile" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">
                         Edit profile
                       </Link>
                     )}
@@ -174,7 +175,7 @@ const NavBar = () => {
               <div className="flex items-center space-x-4">
                 <Link
                   to="/login"
-                  className="px-4 py-2 text-green-600 hover:text-green-700"
+                  className="px-4 py-2 text-green-700 hover:text-green-800"
                 >
                   Login
                 </Link>
@@ -193,7 +194,7 @@ const NavBar = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden border-t py-4 space-y-2">
             <Link to="/" onClick={() => setIsMobileMenuOpen(false)}
-              className={`block px-4 py-2 rounded-lg ${isActive('/') ? 'bg-green-50 text-green-600' : 'text-gray-700 hover:bg-gray-50'}`}>
+              className={`block px-4 py-2 rounded-lg ${isActive('/') ? 'bg-green-50 text-green-700' : 'text-gray-700 hover:bg-gray-50'}`}>
               Home
             </Link>
 
@@ -208,25 +209,25 @@ const NavBar = () => {
               </button>
               {showServicesMenu && (
                 <div className="ml-4 space-y-1">
-                  <Link to="/ai-consultation" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-gray-600 hover:text-green-600 text-sm">AI Health Consultation</Link>
-                  <Link to="/book-appointment" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-gray-600 hover:text-green-600 text-sm">Book Appointment</Link>
-                  <Link to="/find-doctors" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-gray-600 hover:text-green-600 text-sm">Find Doctors</Link>
-                  <Link to="/find-hospitals" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-gray-600 hover:text-green-600 text-sm">Find Hospitals</Link>
-                  <Link to="/find-pharmacies" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-gray-600 hover:text-green-600 text-sm">Find Pharmacies</Link>
+                  <Link to="/ai-consultation" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-gray-600 hover:text-green-700 text-sm">AI Health Consultation</Link>
+                  <Link to="/book-appointment" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-gray-600 hover:text-green-700 text-sm">Book Appointment</Link>
+                  <Link to="/find-doctors" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-gray-600 hover:text-green-700 text-sm">Find Doctors</Link>
+                  <Link to="/find-hospitals" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-gray-600 hover:text-green-700 text-sm">Find Hospitals</Link>
+                  <Link to="/find-pharmacies" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-gray-600 hover:text-green-700 text-sm">Find Pharmacies</Link>
                 </div>
               )}
             </div>
 
             <Link to="/about" onClick={() => setIsMobileMenuOpen(false)}
-              className={`block px-4 py-2 rounded-lg ${isActive('/about') ? 'bg-green-50 text-green-600' : 'text-gray-700 hover:bg-gray-50'}`}>
+              className={`block px-4 py-2 rounded-lg ${isActive('/about') ? 'bg-green-50 text-green-700' : 'text-gray-700 hover:bg-gray-50'}`}>
               About
             </Link>
             <Link to="/faq" onClick={() => setIsMobileMenuOpen(false)}
-              className={`block px-4 py-2 rounded-lg ${isActive('/faq') ? 'bg-green-50 text-green-600' : 'text-gray-700 hover:bg-gray-50'}`}>
+              className={`block px-4 py-2 rounded-lg ${isActive('/faq') ? 'bg-green-50 text-green-700' : 'text-gray-700 hover:bg-gray-50'}`}>
               FAQ
             </Link>
             <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)}
-              className={`block px-4 py-2 rounded-lg ${isActive('/contact') ? 'bg-green-50 text-green-600' : 'text-gray-700 hover:bg-gray-50'}`}>
+              className={`block px-4 py-2 rounded-lg ${isActive('/contact') ? 'bg-green-50 text-green-700' : 'text-gray-700 hover:bg-gray-50'}`}>
               Contact
             </Link>
 
@@ -252,7 +253,7 @@ const NavBar = () => {
             ) : (
               <div className="flex flex-col gap-2 px-4">
                 <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}
-                  className="text-center py-2 text-green-600 border border-green-600 rounded-lg hover:bg-green-50">
+                  className="text-center py-2 text-green-700 border border-green-700 rounded-lg hover:bg-green-50">
                   Login
                 </Link>
                 <Link to="/register" onClick={() => setIsMobileMenuOpen(false)}

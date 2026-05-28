@@ -7,5 +7,15 @@ export default defineConfig({
   plugins: [react(),  tailwindcss()],
   define: {
     global: 'globalThis',
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['react-icons', '@mui/material', '@emotion/react', '@emotion/styled'],
+        }
+      }
+    }
   }
 })

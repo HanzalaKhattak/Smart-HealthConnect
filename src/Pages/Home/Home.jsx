@@ -1,12 +1,11 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaUserMd, FaHospital, FaPills, FaRobot, FaCalendarCheck, FaQuestionCircle, FaCheckCircle, FaStar } from 'react-icons/fa';
-import img1 from './HomeAssets/mandf.png';
-import AIAgent from '../../Components/AIAgent/AIAgent';
-// import BookAppointment from '../../Components/BookAppointment';
-import HospNearYou from '../../Components/HospitalNearYou/HospNearYou';
-// import ShowCard from '../../Components/Specialization Cards/ShowCard';
-import PharmasNearYou from '../../Components/PharmasNearYou/PharmasNearYou';
+import img1 from './HomeAssets/mandf.webp';
+
+const AIAgent = lazy(() => import('../../Components/AIAgent/AIAgent'));
+const HospNearYou = lazy(() => import('../../Components/HospitalNearYou/HospNearYou'));
+const PharmasNearYou = lazy(() => import('../../Components/PharmasNearYou/PharmasNearYou'));
 
 const Home = () => {
   const navigate = useNavigate();
@@ -109,7 +108,7 @@ const Home = () => {
               </div>
             </div>
             <div className='md:w-1/2 animate-slide-up'>
-              <img src={img1} alt="Healthcare Professionals" className='w-full h-auto max-w-lg mx-auto rounded-lg shadow-lg' />
+              <img src={img1} alt="Healthcare Professionals" width={512} height={512} fetchPriority="high" className='w-full h-auto max-w-lg mx-auto rounded-lg shadow-lg' />
             </div>
           </div>
         </div>
@@ -205,12 +204,15 @@ const Home = () => {
       </section>
 
       {/* Quick Access Components */}
-      <AIAgent />
-      {/* <BookAppointment /> */}
+      <Suspense fallback={<div className="min-h-[200px]" />}>
+        <AIAgent />
+      </Suspense>
 
       {/* Location-based Services */}
-      <HospNearYou />
-      <PharmasNearYou />
+      <Suspense fallback={<div className="min-h-[100px]" />}>
+        <HospNearYou />
+        <PharmasNearYou />
+      </Suspense>
 
       {/* CTA Section */}
       <section className="py-16 px-4">
@@ -255,7 +257,7 @@ const TestimonialCard = ({ name, role, content, rating }) => (
     <p className="text-gray-700 mb-4 italic">"{content}"</p>
     <div>
       <p className="font-semibold text-gray-800">{name}</p>
-      <p className="text-sm text-gray-500">{role}</p>
+      <p className="text-sm text-gray-600">{role}</p>
     </div>
   </div>
 );

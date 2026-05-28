@@ -1,31 +1,32 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { Suspense } from 'react';
+import { Suspense, lazy } from 'react';
 import Home from './Pages/Home/Home';
-import About from './Pages/About/About';
-import Register from './Pages/Register/Register';
-import Login from './Pages/Login/Login';
-import ForgotPassword from './Pages/ForgotPassword/ForgotPassword';
-import ResetPassword from './Pages/ResetPassword/ResetPassword';
 import Layout from './Components/Layout';
-import AiConsultant from './Components/AIAgent/AiConsultant';
-import ProtectedRoute from './Pages/protectedRouteError/ProtectedRoutesErrorpage';
-import Appointment from './Pages/Appointment/Appointment';
-import UserDashboard from './Pages/UserDashboard/UserDashboard';
-import DoctorDashboard from './Pages/DoctorDashboard/DoctorDashboard';
-import HospitalAdmin from './Pages/HospitalAdmin/HospitalAdmin';
-import SystemAdminDashboard from './Pages/SystemAdminDashboard/SystemAdminDashboard';
-import FAQ from './Pages/FAQ/FAQ';
-import ContactUs from './Pages/Contact/ContactUs';
-import NotFound from './Pages/NotFound/NotFound';
-import PatientProfile from './Pages/Profile/PatientProfile';
-import DoctorEditProfile from './Pages/DoctorProfile/DoctorEditProfile';
-import VideoSession from './Pages/VideoSession/VideoSession';
-import FindDoctors from './Pages/FindDoctors/FindDoctors';
-import FindHospitals from './Pages/FindHospitals/FindHospitals';
-import FindPharmacies from './Pages/FindPharmacies/FindPharmacies';
-import Payment from './Pages/Payment/Payment';
-import MedicalRecords from './Pages/MedicalRecords/MedicalRecords';
 import './index.css';
+
+const About = lazy(() => import('./Pages/About/About'));
+const Register = lazy(() => import('./Pages/Register/Register'));
+const Login = lazy(() => import('./Pages/Login/Login'));
+const ForgotPassword = lazy(() => import('./Pages/ForgotPassword/ForgotPassword'));
+const ResetPassword = lazy(() => import('./Pages/ResetPassword/ResetPassword'));
+const AiConsultant = lazy(() => import('./Components/AIAgent/AiConsultant'));
+const ProtectedRoute = lazy(() => import('./Pages/protectedRouteError/ProtectedRoutesErrorpage'));
+const Appointment = lazy(() => import('./Pages/Appointment/Appointment'));
+const UserDashboard = lazy(() => import('./Pages/UserDashboard/UserDashboard'));
+const DoctorDashboard = lazy(() => import('./Pages/DoctorDashboard/DoctorDashboard'));
+const HospitalAdmin = lazy(() => import('./Pages/HospitalAdmin/HospitalAdmin'));
+const SystemAdminDashboard = lazy(() => import('./Pages/SystemAdminDashboard/SystemAdminDashboard'));
+const FAQ = lazy(() => import('./Pages/FAQ/FAQ'));
+const ContactUs = lazy(() => import('./Pages/Contact/ContactUs'));
+const NotFound = lazy(() => import('./Pages/NotFound/NotFound'));
+const PatientProfile = lazy(() => import('./Pages/Profile/PatientProfile'));
+const DoctorEditProfile = lazy(() => import('./Pages/DoctorProfile/DoctorEditProfile'));
+const VideoSession = lazy(() => import('./Pages/VideoSession/VideoSession'));
+const FindDoctors = lazy(() => import('./Pages/FindDoctors/FindDoctors'));
+const FindHospitals = lazy(() => import('./Pages/FindHospitals/FindHospitals'));
+const FindPharmacies = lazy(() => import('./Pages/FindPharmacies/FindPharmacies'));
+const Payment = lazy(() => import('./Pages/Payment/Payment'));
+const MedicalRecords = lazy(() => import('./Pages/MedicalRecords/MedicalRecords'));
 
 function App() {
   return (
