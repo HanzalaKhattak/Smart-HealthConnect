@@ -11,3 +11,4 @@ export const API_Notification = `${API_BASE}/api/v0/notifications`;
 export const API_Review = `${API_BASE}/api/v0/reviews`;
 export const API_MedicalRecord = `${API_BASE}/api/v0/medical-records`;
 export const API_Payment = `${API_BASE}/api/v0/payments`;
+export const API_AI = `${API_BASE}/api/v0/ai`;

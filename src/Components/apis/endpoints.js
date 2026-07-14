@@ -68,3 +68,13 @@ export const MR_ForPatient = '/patient';        // append /:patientId
 // ───── Payments ──────────────────────────────────────────
 export const Pay_Checkout = '/checkout';
 export const Pay_Confirm = '/confirm';
+
+// ───── AI Consultation (RAG) ─────────────────────────────
+export const AI_Consult = '/consult';
+export const AI_Sessions = '/sessions';           // GET list, append /:id for one
+export const AI_Feedback = '/feedback';
+export const AI_Admin_Ingest_Doctor = '/admin/ingest/doctor';       // append /:id
+export const AI_Admin_Ingest_Hospital = '/admin/ingest/hospital';   // append /:id
+export const AI_Admin_Ingest_Knowledge = '/admin/ingest/knowledge';
+export const AI_Admin_Reindex_All = '/admin/reindex-all';
+export const AI_Admin_Stats = '/admin/stats';
