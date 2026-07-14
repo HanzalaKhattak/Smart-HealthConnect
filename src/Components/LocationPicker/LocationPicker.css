@@ -3,8 +3,33 @@
   height: 450px;
   width: 100%;
   border-radius: 8px;
+  /* Keep the whole map stack below the sticky NavBar (z-index: 1100) */
   z-index: 0;
+  isolation: isolate;
   cursor: crosshair;
+}
+
+/* Clamp every internal Leaflet layer so nothing escapes the container stacking context */
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-pane,
+.leaflet-overlay-pane,
+.leaflet-shadow-pane,
+.leaflet-marker-pane,
+.leaflet-tooltip-pane,
+.leaflet-popup-pane {
+  z-index: auto;
+}
+
+.leaflet-map-pane canvas { z-index: 1; }
+.leaflet-map-pane svg    { z-index: 2; }
+
+/* Controls stay inside the map area */
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 10;
 }
 
 .leaflet-popup-content-wrapper {

@@ -48,9 +48,9 @@ const SystemAdminDashboard = () => {
     let adminsList = [];
     
     try {
-      // Fetch all doctors
+      // Fetch ALL doctors (including pending) — requires admin token
       try {
-        const doctorsRes = await axios.get(`${API_Doctor}${Get_All_Doctors}`);
+        const doctorsRes = await axios.get(`${API_Doctor}${Get_All_Doctors}?all=true`, { headers });
         doctorsList = doctorsRes.data.Doctors || doctorsRes.data || [];
         setDoctors(doctorsList);
       } catch (err) {
@@ -165,11 +165,11 @@ const SystemAdminDashboard = () => {
       <div className="flex">
         {/* Mobile sidebar overlay */}
         {sidebarOpen && (
-          <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+          <div className="fixed inset-x-0 top-16 bottom-0 bg-black/40 z-30 md:hidden" onClick={() => setSidebarOpen(false)} />
         )}
 
         {/* Sidebar */}
-        <aside className={`fixed md:sticky top-0 left-0 z-50 w-64 bg-white shadow-lg min-h-screen h-screen overflow-y-auto p-6 transition-transform duration-300 md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <aside className={`fixed md:sticky top-16 left-0 z-40 w-64 bg-white shadow-lg h-[calc(100vh-4rem)] overflow-y-auto p-6 transition-transform duration-300 md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <FaUserShield className="text-purple-600 text-3xl" />
@@ -198,6 +198,12 @@ const SystemAdminDashboard = () => {
               label="Doctors" 
               active={activeTab === 'doctors'}
               onClick={() => { setActiveTab('doctors'); setSidebarOpen(false); }}
+            />
+            <NavItem 
+              icon={<FaExclamationTriangle />} 
+              label={`Pending Approvals${stats.pendingApprovals > 0 ? ` (${stats.pendingApprovals})` : ''}`}
+              active={activeTab === 'pending'}
+              onClick={() => { setActiveTab('pending'); setSidebarOpen(false); }}
             />
             <NavItem 
               icon={<FaUsers />} 
@@ -253,11 +259,16 @@ const SystemAdminDashboard = () => {
                 <p className="text-gray-600 mt-1 text-sm sm:text-base">Monitor and manage the entire Smart HealthConnect platform</p>
               </div>
               <div className="flex items-center gap-4">
-                <button className="relative p-3 bg-purple-50 rounded-full hover:bg-purple-100 transition-colors">
+                <button
+                  onClick={() => setActiveTab('pending')}
+                  className="relative p-3 bg-purple-50 rounded-full hover:bg-purple-100 transition-colors"
+                >
                   <FaBell className="text-purple-600 text-xl" />
-                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {stats.pendingApprovals}
-                  </span>
+                  {stats.pendingApprovals > 0 && (
+                    <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {stats.pendingApprovals}
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
@@ -271,6 +282,7 @@ const SystemAdminDashboard = () => {
               doctors={doctors}
               loading={loading}
               formatDate={formatDate}
+              onNavigate={setActiveTab}
             />
           )}
           {activeTab === 'hospitals' && (
@@ -301,6 +313,14 @@ const SystemAdminDashboard = () => {
               formatDate={formatDate}
             />
           )}
+          {activeTab === 'pending' && (
+            <PendingApprovalsView
+              doctors={doctors.filter(d => d.isApproved === false)}
+              loading={loading}
+              onApprove={handleApproveDoctor}
+              onReject={handleRejectDoctor}
+            />
+          )}
           {activeTab === 'analytics' && (
             <AnalyticsView 
               stats={stats}
@@ -327,7 +347,7 @@ const NavItem = ({ icon, label, active, onClick }) => (
 );
 
 // Overview View - Dynamic
-const OverviewView = ({ stats, appointments, doctors, loading, formatDate }) => (
+const OverviewView = ({ stats, appointments, doctors, loading, formatDate, onNavigate }) => (
   <>
     {loading ? (
       <div className="text-center py-8">
@@ -336,12 +356,40 @@ const OverviewView = ({ stats, appointments, doctors, loading, formatDate }) => 
       </div>
     ) : (
       <>
+        {/* Pending approvals alert banner */}
+        {stats.pendingApprovals > 0 && (
+          <button
+            onClick={() => onNavigate('pending')}
+            className="w-full mb-6 bg-yellow-50 border border-yellow-300 rounded-xl p-4 flex items-center gap-3 hover:bg-yellow-100 transition text-left"
+          >
+            <FaExclamationTriangle className="text-yellow-500 text-2xl flex-shrink-0" />
+            <div className="flex-1">
+              <p className="font-semibold text-yellow-800">
+                {stats.pendingApprovals} doctor{stats.pendingApprovals > 1 ? 's' : ''} waiting for approval
+              </p>
+              <p className="text-sm text-yellow-700">Click to review and approve</p>
+            </div>
+            <span className="text-yellow-600 text-sm font-medium">Review →</span>
+          </button>
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 animate-stagger">
           <StatCard icon={<FaUserMd className="text-3xl" />} title="Total Doctors" count={stats.totalDoctors} trend={`+${stats.pendingApprovals} pending`} color="blue" />
           <StatCard icon={<FaUsers className="text-3xl" />} title="Total Patients" count={stats.totalPatients} trend="Active users" color="green" />
           <StatCard icon={<FaCalendarAlt className="text-3xl" />} title="Total Appointments" count={stats.totalAppointments} trend={`${stats.todayAppointments} today`} color="purple" />
-          <StatCard icon={<FaServer className="text-3xl" />} title="System Status" count="Online" trend="All services running" color="teal" />
+          <button onClick={() => onNavigate('pending')} className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all text-left w-full">
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-3 text-yellow-600 bg-yellow-50">
+              <FaExclamationTriangle className="text-3xl" />
+            </div>
+            <p className="text-gray-500 text-sm mb-1">Pending Approvals</p>
+            <div className="flex items-end justify-between">
+              <p className="text-2xl font-bold">{stats.pendingApprovals}</p>
+              <span className={`text-sm font-medium ${stats.pendingApprovals > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                {stats.pendingApprovals > 0 ? 'Action needed' : 'All clear'}
+              </span>
+            </div>
+          </button>
         </div>
 
         {/* System Health & Recent Activity */}
@@ -434,6 +482,94 @@ const HospitalAdminsView = ({ admins, loading }) => (
         <p className="text-gray-500">No hospital administrators registered yet</p>
       </div>
     )}
+  </div>
+);
+
+// Pending Approvals View
+const PendingApprovalsView = ({ doctors, loading, onApprove, onReject }) => (
+  <div className="space-y-4">
+    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
+      <FaExclamationTriangle className="text-yellow-500 text-xl mt-0.5 flex-shrink-0" />
+      <div>
+        <p className="font-semibold text-yellow-800">Doctor Approval Required</p>
+        <p className="text-sm text-yellow-700 mt-0.5">
+          Newly registered doctors cannot accept patient bookings until approved. Review their credentials below.
+        </p>
+      </div>
+    </div>
+
+    <div className="bg-white p-6 rounded-xl shadow-md">
+      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+        <FaExclamationTriangle className="text-yellow-500" /> Pending Doctor Approvals
+        {doctors.length > 0 && (
+          <span className="ml-2 bg-yellow-100 text-yellow-700 text-sm font-semibold px-3 py-0.5 rounded-full">
+            {doctors.length}
+          </span>
+        )}
+      </h2>
+
+      {loading ? (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600 mx-auto"></div>
+        </div>
+      ) : doctors.length === 0 ? (
+        <div className="text-center py-12">
+          <FaCheck className="text-green-400 text-5xl mx-auto mb-4" />
+          <p className="text-gray-600 font-medium">All caught up!</p>
+          <p className="text-gray-400 text-sm mt-1">No doctors are waiting for approval.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {doctors.map((doc) => (
+            <div key={doc._id} className="border rounded-xl p-4 hover:shadow-md transition-shadow bg-white">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  {doc.avatar ? (
+                    <img src={doc.avatar} alt="" className="w-14 h-14 rounded-full object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-2xl flex-shrink-0">
+                      <FaUserMd />
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-bold text-gray-800 text-base">Dr. {doc.fullName || doc.username}</p>
+                    <p className="text-sm text-purple-700 font-medium">{doc.specialization}</p>
+                    <div className="mt-1 space-y-0.5 text-xs text-gray-500">
+                      {doc.email && <p>✉️ {doc.email}</p>}
+                      {doc.phone && <p>📞 {doc.phone}</p>}
+                      {doc.licenseNumber && <p>🪪 License: {doc.licenseNumber}</p>}
+                      {doc.experience && <p>🏥 Experience: {doc.experience}</p>}
+                      {doc.qualifications?.length > 0 && (
+                        <p>🎓 {doc.qualifications.join(', ')}</p>
+                      )}
+                      {doc.hospitalId?.name && <p>🏨 {doc.hospitalId.name}</p>}
+                      {doc.consultationFee > 0 && <p>💰 Fee: Rs. {doc.consultationFee}</p>}
+                    </div>
+                    {doc.bio && (
+                      <p className="mt-2 text-xs text-gray-600 italic line-clamp-2">{doc.bio}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex sm:flex-col gap-2 sm:w-32 flex-shrink-0">
+                  <button
+                    onClick={() => onApprove(doc._id)}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition"
+                  >
+                    <FaCheck /> Approve
+                  </button>
+                  <button
+                    onClick={() => onReject(doc._id)}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition"
+                  >
+                    ✕ Reject
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   </div>
 );
 

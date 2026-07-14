@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  FaCalendarCheck, FaUserInjured, FaComments, FaNotesMedical, FaBell, FaUserMd,
+  FaCalendarCheck, FaUserInjured, FaNotesMedical, FaUserMd,
   FaChartLine, FaSignOutAlt, FaClock, FaCheckCircle, FaStar, FaEdit,
   FaFileMedical, FaUsers, FaClipboardList, FaCog, FaVideo, FaBars
 } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { API_Appointment, API_Doctor } from '../../Components/apis/apisUrl';
-import { Get_Doctor_Appointments, Update_Appointment, Get_Specific_Doctor, Set_Availability } from '../../Components/apis/endpoints';
+import { API_Appointment, API_Doctor, API_Review } from '../../Components/apis/apisUrl';
+import { Get_Doctor_Appointments, Update_Appointment, Get_Specific_Doctor, Set_Availability, Review_Doctor } from '../../Components/apis/endpoints';
+import NotificationBell from '../../Components/NotificationBell/NotificationBell';
 
 const DoctorDashboard = () => {
   const navigate = useNavigate();
@@ -19,11 +20,13 @@ const DoctorDashboard = () => {
   const [sessionAppointment, setSessionAppointment] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profile, setProfile] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [selectedPatient, setSelectedPatient] = useState(null);
   const [stats, setStats] = useState({
     todayAppointments: 0,
     totalPatients: 0,
     pendingReviews: 0,
-    rating: '4.8'
+    rating: '0.0'
   });
 
   useEffect(() => {
@@ -35,6 +38,7 @@ const DoctorDashboard = () => {
     if (id) {
       fetchAppointments(id);
       fetchProfile(id);
+      fetchReviews(id);
     }
   }, []);
 
@@ -44,9 +48,29 @@ const DoctorDashboard = () => {
       const res = await axios.get(`${API_Doctor}${Get_Specific_Doctor}/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
-      setProfile(res.data.doctor || res.data.Doctor || res.data);
+      const doc = res.data.doctor || res.data.Doctor || res.data;
+      setProfile(doc);
+      if (doc && typeof doc.rating === 'number') {
+        setStats(prev => ({
+          ...prev,
+          rating: doc.ratingCount ? doc.rating.toFixed(1) : 'N/A'
+        }));
+      }
     } catch (err) {
       console.log('Error fetching doctor profile:', err);
+    }
+  };
+
+  const fetchReviews = async (id) => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await axios.get(`${API_Review}${Review_Doctor}/${id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      setReviews(res.data.reviews || []);
+    } catch (err) {
+      console.log('Error fetching reviews:', err);
+      setReviews([]);
     }
   };
 
@@ -87,12 +111,12 @@ const DoctorDashboard = () => {
       const uniquePatients = [...new Set(appointmentsData.map(apt => apt.patientId?._id).filter(Boolean))];
       const pendingApts = appointmentsData.filter(apt => apt.status === 'Pending');
       
-      setStats({
+      setStats(prev => ({
+        ...prev,
         todayAppointments: todayApts.length,
         totalPatients: uniquePatients.length,
         pendingReviews: pendingApts.length,
-        rating: '4.8'
-      });
+      }));
     } catch (error) {
       console.error('Error fetching appointments:', error);
       setAppointments([]);
@@ -145,24 +169,22 @@ const DoctorDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 animate-fade-in">
-      {/* Top Navigation Bar */}
-      {/* <header className="bg-white shadow-md p-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-green-600">Smart HealthConnect - Doctor Panel</h1>
-        <div className="flex items-center gap-4">
-          <button className="text-xl"><FaBell /></button>
-          <button className="text-xl"><FaUserMd /></button>
-        </div>
-      </header> */}
-
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 animate-fade-in">
       <div className="flex">
-        {/* Mobile sidebar overlay */}
+        {/* Mobile sidebar overlay (below NavBar which is z-50) */}
         {sidebarOpen && (
-          <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+          <div
+            className="fixed inset-x-0 top-16 bottom-0 bg-black/40 z-30 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
         )}
 
-        {/* Sidebar Navigation */}
-        <aside className={`fixed md:sticky top-0 left-0 z-50 w-64 bg-white shadow-lg min-h-screen h-screen overflow-y-auto p-6 transition-transform duration-300 md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        {/* Sidebar Navigation — sits below the site NavBar (top-16) and stays inside viewport */}
+        <aside
+          className={`fixed md:sticky top-16 left-0 z-40 w-64 bg-white shadow-lg h-[calc(100vh-4rem)] overflow-y-auto p-6 transition-transform duration-300 md:translate-x-0 ${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <FaUserMd className="text-green-600 text-3xl" />
@@ -199,10 +221,10 @@ const DoctorDashboard = () => {
               onClick={() => { setActiveTab('prescriptions'); setSidebarOpen(false); }}
             />
             <NavItem 
-              icon={<FaComments />} 
-              label="Messages" 
-              active={activeTab === 'messages'}
-              onClick={() => { setActiveTab('messages'); setSidebarOpen(false); }}
+              icon={<FaStar />} 
+              label="Reviews" 
+              active={activeTab === 'reviews'}
+              onClick={() => { setActiveTab('reviews'); setSidebarOpen(false); }}
             />
             <Link to="/doctor/edit-profile" className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 hover:text-green-600 transition-colors">
               <FaEdit /> Edit Profile
@@ -243,10 +265,7 @@ const DoctorDashboard = () => {
                 <p className="text-gray-600 mt-1 text-sm sm:text-base">Here's your schedule and patient overview</p>
               </div>
               <div className="flex items-center gap-4">
-                <button className="relative p-3 bg-green-50 rounded-full hover:bg-green-100 transition-colors">
-                  <FaBell className="text-green-600 text-xl" />
-                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">4</span>
-                </button>
+                <NotificationBell />
               </div>
             </div>
           </div>
@@ -263,9 +282,12 @@ const DoctorDashboard = () => {
           {activeTab === 'overview' && (
             <OverviewView 
               stats={stats} 
-              appointments={getTodayAppointments()} 
+              todayAppointments={getTodayAppointments()} 
+              allAppointments={appointments}
+              reviews={reviews}
               loading={loading}
               formatDate={formatDate}
+              onNavigate={setActiveTab}
             />
           )}
           {activeTab === 'appointments' && (
@@ -290,6 +312,7 @@ const DoctorDashboard = () => {
             <PatientsView 
               appointments={appointments}
               loading={loading}
+              onSelectPatient={setSelectedPatient}
             />
           )}
           {activeTab === 'prescriptions' && (
@@ -299,10 +322,21 @@ const DoctorDashboard = () => {
               formatDate={formatDate}
             />
           )}
-          {activeTab === 'messages' && <MessagesView />}
+          {activeTab === 'reviews' && (
+            <ReviewsView reviews={reviews} profile={profile} />
+          )}
           {activeTab === 'settings' && <SettingsView profile={profile} onSaveAvailability={handleSaveAvailability} />}
         </main>
       </div>
+
+      {selectedPatient && (
+        <PatientDetailsModal
+          patient={selectedPatient}
+          appointments={appointments}
+          formatDate={formatDate}
+          onClose={() => setSelectedPatient(null)}
+        />
+      )}
     </div>
   );
 };
@@ -320,75 +354,118 @@ const NavItem = ({ icon, label, active, onClick }) => (
 );
 
 // Overview View
-const OverviewView = ({ stats, appointments, loading }) => (
-  <>
-    {/* Stats Cards */}
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 animate-stagger">
-      <StatCard icon={<FaCalendarCheck className="text-3xl" />} title="Today's Appointments" count={stats.todayAppointments.toString()} color="blue" />
-      <StatCard icon={<FaUsers className="text-3xl" />} title="Total Patients" count={stats.totalPatients.toString()} color="green" />
-      <StatCard icon={<FaClock className="text-3xl" />} title="Pending Reviews" count={stats.pendingReviews.toString()} color="yellow" />
-      <StatCard icon={<FaStar className="text-3xl" />} title="Rating" count={stats.rating} color="purple" />
-    </div>
+const OverviewView = ({ stats, todayAppointments, allAppointments, reviews, loading, formatDate, onNavigate }) => {
+  // Build recent unique patients from real appointments (most recent first)
+  const recentPatients = [];
+  const seen = new Set();
+  [...allAppointments]
+    .sort((a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate))
+    .forEach(apt => {
+      const pid = apt.patientId?._id || apt.patientId;
+      if (pid && !seen.has(String(pid))) {
+        seen.add(String(pid));
+        recentPatients.push({
+          id: pid,
+          name: apt.patientName || 'Patient',
+          condition: apt.symptoms ? apt.symptoms.substring(0, 40) : 'Consultation',
+          when: apt.appointmentDate,
+        });
+      }
+    });
 
-    {/* Today's Schedule & Quick Actions */}
-    <div className="grid lg:grid-cols-2 gap-6 mb-6">
-      <div className="bg-white p-6 rounded-xl shadow-md">
-        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <FaCalendarCheck className="text-green-600" /> Today's Schedule
-        </h3>
-        {loading ? (
-          <div className="text-center py-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+  const relativeDay = (d) => {
+    const date = new Date(d);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const day = new Date(date); day.setHours(0, 0, 0, 0);
+    const diff = Math.round((today - day) / 86400000);
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Yesterday';
+    if (diff > 1 && diff < 7) return `${diff} days ago`;
+    return date.toLocaleDateString();
+  };
+
+  return (
+    <>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 animate-stagger">
+        <StatCard icon={<FaCalendarCheck className="text-3xl" />} title="Today's Appointments" count={stats.todayAppointments.toString()} color="blue" />
+        <StatCard icon={<FaUsers className="text-3xl" />} title="Total Patients" count={stats.totalPatients.toString()} color="green" />
+        <StatCard icon={<FaClock className="text-3xl" />} title="Pending Requests" count={stats.pendingReviews.toString()} color="yellow" />
+        <StatCard icon={<FaStar className="text-3xl" />} title="Rating" count={stats.rating} color="purple" />
+      </div>
+
+      {/* Today's Schedule & Quick Actions */}
+      <div className="grid lg:grid-cols-2 gap-6 mb-6">
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <FaCalendarCheck className="text-green-600" /> Today's Schedule
+          </h3>
+          {loading ? (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+            </div>
+          ) : todayAppointments.length > 0 ? (
+            <div className="space-y-3">
+              {todayAppointments.slice(0, 5).map((apt) => (
+                <ScheduleItem 
+                  key={apt._id}
+                  time={apt.appointmentTime} 
+                  patient={apt.patientName} 
+                  type={apt.symptoms?.substring(0, 30) + '...' || 'Consultation'} 
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-4">No appointments today</p>
+          )}
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h3 className="text-xl font-semibold mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <QuickActionBtn icon={<FaCalendarCheck />} label="Appointments" onClick={() => onNavigate('appointments')} />
+            <QuickActionBtn icon={<FaNotesMedical />} label="Prescriptions" onClick={() => onNavigate('prescriptions')} />
+            <QuickActionBtn icon={<FaClipboardList />} label="My Patients" onClick={() => onNavigate('patients')} />
+            <QuickActionBtn icon={<FaCog />} label="Availability" onClick={() => onNavigate('settings')} />
           </div>
-        ) : appointments.length > 0 ? (
-          <div className="space-y-3">
-            {appointments.slice(0, 5).map((apt) => (
-              <ScheduleItem 
-                key={apt._id}
-                time={apt.appointmentTime} 
-                patient={apt.patientName} 
-                type={apt.symptoms?.substring(0, 30) + '...' || 'Consultation'} 
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 text-center py-4">No appointments today</p>
-        )}
-      </div>
-
-      <div className="bg-white p-6 rounded-xl shadow-md">
-        <h3 className="text-xl font-semibold mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <QuickActionBtn icon={<FaNotesMedical />} label="Write Prescription" />
-          <QuickActionBtn icon={<FaVideo />} label="Start Consultation" />
-          <QuickActionBtn icon={<FaClipboardList />} label="View Records" />
-          <QuickActionBtn icon={<FaComments />} label="Messages" />
-        </div>
-      </div>
-    </div>
-
-    {/* Recent Patients & Messages */}
-    <div className="grid lg:grid-cols-2 gap-6">
-      <div className="bg-white p-6 rounded-xl shadow-md">
-        <h3 className="text-xl font-semibold mb-4">Recent Patients</h3>
-        <div className="space-y-3">
-          <PatientQuickCard name="Ahmed Raza" lastVisit="Today" condition="Follow-up" />
-          <PatientQuickCard name="Maria Khan" lastVisit="Yesterday" condition="Consultation" />
-          <PatientQuickCard name="Omar Ali" lastVisit="2 days ago" condition="Check-up" />
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-xl shadow-md">
-        <h3 className="text-xl font-semibold mb-4">Recent Messages</h3>
-        <div className="space-y-3">
-          <MessageCard from="Ahmed Raza" content="Thanks for the advice!" time="2 hours ago" unread={true} />
-          <MessageCard from="Zainab Fatima" content="Should I take medication at night?" time="5 hours ago" unread={false} />
-          <MessageCard from="Bilal Khan" content="Feeling much better now" time="1 day ago" unread={false} />
+      {/* Recent Patients & Recent Reviews */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <FaUserInjured className="text-green-600" /> Recent Patients
+          </h3>
+          {recentPatients.length > 0 ? (
+            <div className="space-y-3">
+              {recentPatients.slice(0, 5).map(p => (
+                <PatientQuickCard key={p.id} name={p.name} lastVisit={relativeDay(p.when)} condition={p.condition} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-4">No patients yet</p>
+          )}
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <FaStar className="text-yellow-500" /> Recent Reviews
+          </h3>
+          {reviews.length > 0 ? (
+            <div className="space-y-3">
+              {reviews.slice(0, 4).map(r => (
+                <ReviewCard key={r._id} review={r} formatDate={formatDate} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-4">No reviews yet</p>
+          )}
         </div>
       </div>
-    </div>
-  </>
-);
+    </>
+  );
+};
 
 // Appointments View
 const AppointmentsView = ({ appointments, loading, formatDate, onUpdateStatus, onStartSession }) => {
@@ -436,7 +513,7 @@ const AppointmentsView = ({ appointments, loading, formatDate, onUpdateStatus, o
 };
 
 // Patients View
-const PatientsView = ({ appointments, loading }) => {
+const PatientsView = ({ appointments, loading, onSelectPatient }) => {
   // Get unique patients from appointments
   const uniquePatients = [];
   const patientIds = new Set();
@@ -448,6 +525,8 @@ const PatientsView = ({ appointments, loading }) => {
         id: apt.patientId._id,
         name: apt.patientName,
         age: apt.patientAge,
+        gender: apt.patientGender,
+        contact: apt.contactNumber,
         lastVisit: apt.appointmentDate,
         status: apt.status === 'Completed' ? 'Active' : 'Follow-up'
       });
@@ -469,7 +548,8 @@ const PatientsView = ({ appointments, loading }) => {
               name={patient.name} 
               age={patient.age?.toString()} 
               lastVisit={new Date(patient.lastVisit).toLocaleDateString()} 
-              status={patient.status} 
+              status={patient.status}
+              onView={() => onSelectPatient(patient)}
             />
           ))}
         </div>
@@ -493,9 +573,9 @@ const PrescriptionsView = ({ appointments, loading, formatDate }) => {
       <div className="bg-white p-6 rounded-xl shadow-md">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Prescriptions</h2>
-          <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
-            <FaNotesMedical /> New Prescription
-          </button>
+          <p className="text-xs text-gray-500 hidden sm:block">
+            Write prescriptions inside a consultation session.
+          </p>
         </div>
         {loading ? (
           <div className="text-center py-8">
@@ -523,18 +603,63 @@ const PrescriptionsView = ({ appointments, loading, formatDate }) => {
   );
 };
 
-// Messages View
-const MessagesView = () => (
-  <div className="bg-white p-6 rounded-xl shadow-md">
-    <h2 className="text-2xl font-bold mb-6">Messages</h2>
-    <div className="space-y-3">
-      <MessageCard from="Ahmed Raza" content="Thanks for the advice, doctor! Feeling much better." time="2 hours ago" unread={true} />
-      <MessageCard from="Zainab Fatima" content="Should I take the medication at night or morning?" time="5 hours ago" unread={true} />
-      <MessageCard from="Bilal Khan" content="The test results are ready. When can I visit?" time="1 day ago" unread={false} />
-      <MessageCard from="Sarah Ahmed" content="Thank you for the consultation yesterday." time="2 days ago" unread={false} />
+// Reviews View — patient feedback for the doctor
+const ReviewsView = ({ reviews, profile }) => {
+  const avg = profile?.ratingCount ? profile.rating.toFixed(1) : 'N/A';
+  const count = profile?.ratingCount || 0;
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-xl shadow-md">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <FaStar className="text-yellow-500" /> Patient Reviews
+          </h2>
+          <div className="text-right">
+            <p className="text-3xl font-bold text-gray-800">{avg}</p>
+            <p className="text-xs text-gray-500">{count} {count === 1 ? 'review' : 'reviews'}</p>
+          </div>
+        </div>
+        {reviews.length === 0 ? (
+          <div className="text-center py-8">
+            <FaStar className="text-gray-300 text-5xl mx-auto mb-4" />
+            <p className="text-gray-500">No reviews yet. Reviews will appear here once patients rate your consultations.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {reviews.map(r => (
+              <ReviewCard key={r._id} review={r} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
+const ReviewCard = ({ review }) => {
+  const stars = Math.round(review.rating || 0);
+  const patient = review.patientId?.fullName || review.patientId?.username || 'Anonymous';
+  const when = review.createdAt ? new Date(review.createdAt).toLocaleDateString() : '';
+  return (
+    <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+      <div className="flex justify-between items-start gap-3">
+        <div className="min-w-0">
+          <p className="font-semibold text-gray-800 truncate">{patient}</p>
+          <div className="flex items-center gap-1 mt-0.5">
+            {[1, 2, 3, 4, 5].map(i => (
+              <FaStar key={i} className={i <= stars ? 'text-yellow-400' : 'text-gray-300'} />
+            ))}
+            <span className="text-xs text-gray-500 ml-1">{review.rating?.toFixed(1)}</span>
+          </div>
+        </div>
+        <span className="text-xs text-gray-400 shrink-0">{when}</span>
+      </div>
+      {review.comment && (
+        <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">{review.comment}</p>
+      )}
+    </div>
+  );
+};
 
 // Settings View
 const SettingsView = ({ profile, onSaveAvailability }) => {
@@ -629,8 +754,11 @@ const ScheduleItem = ({ time, patient, type }) => (
   </div>
 );
 
-const QuickActionBtn = ({ icon, label }) => (
-  <button className="flex flex-col items-center p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all group">
+const QuickActionBtn = ({ icon, label, onClick }) => (
+  <button
+    onClick={onClick}
+    className="flex flex-col items-center p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all group"
+  >
     <div className="text-2xl text-gray-600 group-hover:text-green-600 mb-2">{icon}</div>
     <span className="text-sm font-medium">{label}</span>
   </button>
@@ -711,7 +839,7 @@ const AppointmentCard = ({ appointment, formatDate, onUpdateStatus, onStartSessi
   );
 };
 
-const PatientCard = ({ name, age, lastVisit, status }) => {
+const PatientCard = ({ name, age, lastVisit, status, onView }) => {
   const statusColors = {
     'Active': 'bg-green-100 text-green-700',
     'Follow-up': 'bg-yellow-100 text-yellow-700'
@@ -721,14 +849,19 @@ const PatientCard = ({ name, age, lastVisit, status }) => {
       <div className="flex justify-between items-start mb-2">
         <div>
           <p className="font-semibold text-gray-800">{name}</p>
-          <p className="text-sm text-gray-600">Age: {age}</p>
+          <p className="text-sm text-gray-600">Age: {age || '—'}</p>
         </div>
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status]}`}>
           {status}
         </span>
       </div>
       <p className="text-xs text-gray-500">Last visit: {lastVisit}</p>
-      <button className="mt-3 text-sm text-green-600 hover:text-green-700 font-medium">View Details →</button>
+      <button
+        onClick={onView}
+        className="mt-3 text-sm text-green-600 hover:text-green-700 font-medium"
+      >
+        View Details →
+      </button>
     </div>
   );
 };
@@ -746,23 +879,91 @@ const PrescriptionCard = ({ patient, date, medications }) => (
   </div>
 );
 
-const MessageCard = ({ from, content, time, unread }) => (
-  <div className={`border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer ${unread ? 'bg-green-50 border-green-200' : ''}`}>
-    <div className="flex justify-between items-start mb-2">
-      <p className="font-semibold text-gray-800">{from}</p>
-      {unread && <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full">New</span>}
-    </div>
-    <p className="text-gray-700 text-sm mb-1">{content}</p>
-    <p className="text-xs text-gray-500">{time}</p>
-  </div>
-);
+/* ════════════════════════════════════════════════════
+   PATIENT DETAILS MODAL — shows this patient's history
+════════════════════════════════════════════════════ */
+const PatientDetailsModal = ({ patient, appointments, formatDate, onClose }) => {
+  const history = appointments
+    .filter(a => String(a.patientId?._id || a.patientId) === String(patient.id))
+    .sort((a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate));
 
-const SettingItem = ({ label, value }) => (
-  <div className="flex justify-between items-center p-3 border-b">
-    <span className="text-gray-700 font-medium">{label}</span>
-    <span className="text-gray-600">{value}</span>
-  </div>
-);
+  const completed = history.filter(a => a.status === 'Completed');
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 rounded-t-2xl flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <FaUserInjured /> {patient.name}
+            </h2>
+            <p className="text-green-100 text-sm mt-0.5">
+              {patient.age ? `${patient.age} yrs` : '—'} {patient.gender ? `• ${patient.gender}` : ''} {patient.contact ? `• ${patient.contact}` : ''}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-white text-2xl hover:text-green-200 transition leading-none">&times;</button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="bg-blue-50 rounded-lg p-3">
+              <p className="text-2xl font-bold text-blue-700">{history.length}</p>
+              <p className="text-xs text-blue-700">Total Visits</p>
+            </div>
+            <div className="bg-green-50 rounded-lg p-3">
+              <p className="text-2xl font-bold text-green-700">{completed.length}</p>
+              <p className="text-xs text-green-700">Completed</p>
+            </div>
+            <div className="bg-yellow-50 rounded-lg p-3">
+              <p className="text-2xl font-bold text-yellow-700">{history.length - completed.length}</p>
+              <p className="text-xs text-yellow-700">Upcoming/Other</p>
+            </div>
+          </div>
+
+          <h3 className="font-semibold text-gray-800 mt-4">Visit History</h3>
+          {history.length === 0 ? (
+            <p className="text-gray-500 text-sm">No visits recorded.</p>
+          ) : (
+            <div className="space-y-2">
+              {history.map(a => (
+                <div key={a._id} className="border rounded-lg p-3">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-800">
+                        {formatDate(a.appointmentDate)} • {a.appointmentTime}
+                      </p>
+                      {a.symptoms && (
+                        <p className="text-xs text-gray-600 mt-1">🩺 {a.symptoms}</p>
+                      )}
+                      {a.doctorNotes && (
+                        <p className="text-xs text-indigo-600 mt-1">📝 {a.doctorNotes}</p>
+                      )}
+                      {a.prescription && (
+                        <p className="text-xs text-green-600 mt-1">💊 {a.prescription}</p>
+                      )}
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 shrink-0">
+                      {a.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex justify-end pt-4 border-t">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-sm"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 /* ════════════════════════════════════════════════════
    SESSION MODAL — doctor conducts the consultation
@@ -794,7 +995,7 @@ const SessionModal = ({ appointment, onClose, onComplete, onUpdateStatus }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
 
         {/* Header */}
