@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { API_AI } from '../apis/apisUrl';
 import { AI_Consult, AI_Feedback } from '../apis/endpoints';
+import { useAuth } from '../../context/AuthContext';
 
 /**
  * AI Medical Consultation UI backed by the server-side RAG pipeline
@@ -13,17 +14,33 @@ import { AI_Consult, AI_Feedback } from '../apis/endpoints';
  *   2. Server retrieves top-K chunks from pgvector, calls Gemini,
  *      persists the turn, returns { reply, sessionId, sources, recommendations }.
  */
+const BASE_STORAGE_KEY = 'shc.aiConsult.v1';
+const INITIAL_GREETING = {
+  role: 'model',
+  content: "Hello! I'm your Smart-HealthConnect assistant. Tell me what symptoms you're experiencing and I'll point you toward the right specialist.",
+  sources: [],
+};
+
 const AiConsultant = () => {
-  const [chat, setChat] = useState([
-    {
-      role: 'model',
-      content: "Hello! I'm your Smart-HealthConnect assistant. Tell me what symptoms you're experiencing and I'll point you toward the right specialist.",
-      sources: [],
-    },
-  ]);
+  const { user } = useAuth();
+  // Scope localStorage to the logged-in user so sessions never bleed between accounts.
+  const storageKey = user?.id ? `${BASE_STORAGE_KEY}.${user.id}` : BASE_STORAGE_KEY;
+
+  // Hydrate chat + sessionId from localStorage so a refresh doesn't wipe context.
+  const [chat, setChat] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
+      if (saved?.chat?.length) return saved.chat;
+    } catch { /* ignore */ }
+    return [INITIAL_GREETING];
+  });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sessionId, setSessionId] = useState(null);
+  const [sessionId, setSessionId] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(storageKey) || 'null')?.sessionId || null;
+    } catch { return null; }
+  });
   const [emergency, setEmergency] = useState(false);
   const [recommendations, setRecommendations] = useState({ doctors: [], hospitals: [] });
   const [error, setError] = useState('');
@@ -32,6 +49,13 @@ const AiConsultant = () => {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [chat, loading]);
+
+  // Persist chat + sessionId on every change.
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({ chat, sessionId }));
+    } catch { /* quota / privacy mode — ignore */ }
+  }, [chat, sessionId, storageKey]);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -92,6 +116,7 @@ const AiConsultant = () => {
         sources: [],
       },
     ]);
+    try { localStorage.removeItem(storageKey); } catch { /* ignore */ }
   };
 
   return (
