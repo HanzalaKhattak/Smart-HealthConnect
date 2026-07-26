@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaUser, FaUserMd, FaHospital, FaTools, FaSpinner, FaArrowLeft } from 'react-icons/fa';
+import { FaUser, FaUserMd, FaHospital, FaTools, FaSpinner, FaArrowLeft, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { API_User, API_Doctor, API_HospitalAdmin, API_SuperAdmin } from '../../Components/apis/apisUrl';
 import { Add_User, Register_Doctor, Register_HospitalAdmin, Register_SuperAdin } from '../../Components/apis/endpoints';
 import Toast from '../../Components/Toast/Toast';
@@ -12,6 +12,7 @@ const RegisterForm = () => {
   const [formData, setFormData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -88,14 +89,24 @@ const RegisterForm = () => {
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
         required
       />
-      <input
-        type="password"
-        name="password"
-        placeholder="Password (min 8 chars, upper, lower, number)"
-        onChange={handleChange}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-        required
-      />
+      <div className="relative">
+        <input
+          type={showPassword ? "text" : "password"}
+          name="password"
+          placeholder="Password (min 8 chars, upper, lower, number)"
+          onChange={handleChange}
+          className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          required
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+          tabIndex="-1"
+        >
+          {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+        </button>
+      </div>
     </>
   );
 

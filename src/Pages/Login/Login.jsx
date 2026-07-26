@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaUser, FaUserMd, FaHospital, FaTools, FaSpinner, FaArrowLeft } from 'react-icons/fa';
+import { FaUser, FaUserMd, FaHospital, FaTools, FaSpinner, FaArrowLeft, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { API_User, API_Doctor, API_HospitalAdmin, API_SuperAdmin } from '../../Components/apis/apisUrl';
 import { Login_User, Doctor_Login, HospitalAdmin_Login, SuperAdmin_Login } from '../../Components/apis/endpoints';
 import Toast from '../../Components/Toast/Toast';
@@ -14,6 +14,7 @@ const Login = () => {
   const [formData, setFormData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -183,14 +184,24 @@ const Login = () => {
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
               required
             />
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                onChange={handleChange}
+                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                tabIndex="-1"
+              >
+                {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+              </button>
+            </div>
             <div className="text-right">
               <Link to="/forgot-password" className="text-sm text-green-700 hover:underline">
                 Forgot password?
