@@ -73,6 +73,7 @@ const Login = () => {
           localStorage.setItem('userId', account?._id || '');
           localStorage.setItem('userType', type);
           if (account?.hospitalName) localStorage.setItem('hospitalName', account.hospitalName);
+          if (account?.hospitalId) localStorage.setItem('hospitalId', typeof account.hospitalId === 'object' ? (account.hospitalId._id || '') : account.hospitalId);
           login({ id: account?._id, username: account?.fullName || account?.username, email: account?.email, userType: type });
           setTimeout(() => Nav(redirectTo), 1200);
         };

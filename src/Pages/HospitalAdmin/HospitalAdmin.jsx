@@ -1,524 +1,815 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  FaHospital, FaUserMd, FaUsers, FaCalendarAlt, FaFileMedical, FaCog, 
+import {
+  FaHospital, FaUserMd, FaUsers, FaCalendarAlt, FaFileMedical, FaCog,
   FaChartLine, FaBell, FaSignOutAlt, FaCheckCircle, FaTimes, FaEye,
-  FaPlus, FaEdit, FaTrash, FaSearch, FaFilter, FaClock, FaMoneyBillWave, FaBars
+  FaPlus, FaEdit, FaTrash, FaSearch, FaClock, FaBars, FaEnvelope,
+  FaPhone, FaMapMarkerAlt, FaIdBadge, FaVenusMars, FaBirthdayCake,
+  FaSave, FaRedo
 } from 'react-icons/fa';
-import { API_Doctor, API_User, API_Appointment } from '../../Components/apis/apisUrl';
-import { Get_All_Doctors, Get_All_Users, Get_All_Appointments, Approve_Doctor, Reject_Doctor } from '../../Components/apis/endpoints';
+import {
+  API_Doctor, API_User, API_Appointment, API_Hospital, API_Notification
+} from '../../Components/apis/apisUrl';
+import {
+  Get_All_Doctors, Get_All_Users, Get_All_Appointments,
+  Approve_Doctor, Reject_Doctor, Delete_Doctor,
+  Cancel_Appointment, Update_Appointment, Notif_List
+} from '../../Components/apis/endpoints';
+
+const authHeaders = () => {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 const HospitalAdminDashboard = () => {
   const navigate = useNavigate();
   const [adminName, setAdminName] = useState('Admin');
   const [hospitalName, setHospitalName] = useState('');
+  const [hospitalId, setHospitalId] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
-  // Data states
+  const [notifOpen, setNotifOpen] = useState(false);
+
   const [doctors, setDoctors] = useState([]);
   const [patients, setPatients] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [hospital, setHospital] = useState(null);
+
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [modal, setModal] = useState(null); // { title, body, onClose }
+
   const [stats, setStats] = useState({
-    totalDoctors: 0,
-    totalPatients: 0,
-    todayAppointments: 0,
-    pendingApprovals: 0
+    totalDoctors: 0, totalPatients: 0, todayAppointments: 0, pendingApprovals: 0,
   });
 
-  useEffect(() => {
-    const username = localStorage.getItem('username');
-    const hospital = localStorage.getItem('hospitalName') || 'Your Hospital';
-    setAdminName(username || 'Admin');
-    setHospitalName(hospital);
-    
-    fetchAllData();
-  }, []);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
-  const fetchAllData = async () => {
-    setLoading(true);
-    const token = localStorage.getItem('token');
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    
-    let doctorsList = [];
-    let usersList = [];
-    let appointmentsList = [];
-    
+  const fetchAllData = useCallback(async () => {
+    setRefreshing(true);
+    let doctorsList = [], usersList = [], appointmentsList = [], notifList = [];
     try {
-      // Fetch all doctors (include pending for admin approval queue)
-      try {
-        const doctorsRes = await axios.get(`${API_Doctor}${Get_All_Doctors}?all=true&pending=true`, { headers });
-        doctorsList = doctorsRes.data.Doctors || doctorsRes.data.doctors || doctorsRes.data || [];
-        setDoctors(doctorsList);
-      } catch (err) {
-        console.log('Error fetching doctors:', err);
-        setDoctors([]);
+      const [dRes, uRes, aRes, nRes] = await Promise.allSettled([
+        axios.get(`${API_Doctor}${Get_All_Doctors}?all=true`, { headers: authHeaders() }),
+        axios.get(`${API_User}${Get_All_Users}`, { headers: authHeaders() }),
+        axios.get(`${API_Appointment}${Get_All_Appointments}`, { headers: authHeaders() }),
+        axios.get(`${API_Notification}${Notif_List}`, { headers: authHeaders() }),
+      ]);
+
+      if (dRes.status === 'fulfilled') {
+        doctorsList = dRes.value.data.Doctors || dRes.value.data.doctors || dRes.value.data || [];
       }
-      
-      // Fetch all users (patients)
-      try {
-        const usersRes = await axios.get(`${API_User}${Get_All_Users}`, { headers });
-        usersList = usersRes.data || [];
-        setPatients(usersList);
-      } catch (err) {
-        console.log('Error fetching patients:', err);
-        setPatients([]);
+      if (uRes.status === 'fulfilled') {
+        usersList = Array.isArray(uRes.value.data) ? uRes.value.data : (uRes.value.data.users || []);
       }
-      
-      // Fetch all appointments
-      try {
-        const appointmentsRes = await axios.get(`${API_Appointment}${Get_All_Appointments}`);
-        appointmentsList = appointmentsRes.data.appointments || appointmentsRes.data || [];
-        setAppointments(appointmentsList);
-      } catch (err) {
-        console.log('Error fetching appointments:', err);
-        setAppointments([]);
+      if (aRes.status === 'fulfilled') {
+        appointmentsList = aRes.value.data.appointments || aRes.value.data || [];
       }
-      
-      // Calculate stats using local variables
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      
-      const todayApts = appointmentsList.filter(apt => {
-        const aptDate = new Date(apt.appointmentDate);
-        return aptDate >= today && aptDate < tomorrow;
+      if (nRes.status === 'fulfilled') {
+        notifList = nRes.value.data.notifications || nRes.value.data || [];
+      }
+
+      setDoctors(doctorsList);
+      setPatients(usersList);
+      setAppointments(appointmentsList);
+      setNotifications(notifList);
+
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+      const todayApts = appointmentsList.filter(a => {
+        const d = new Date(a.appointmentDate);
+        return d >= today && d < tomorrow;
       });
-      
-      // Calculate pending approvals (doctors with pending status)
-      const pendingDoctors = doctorsList.filter(doc => doc.status === 'pending' || !doc.isApproved);
-      
+      const pendingDoctors = doctorsList.filter(d => d.isApproved === false);
+
       setStats({
         totalDoctors: doctorsList.length,
         totalPatients: usersList.length,
         todayAppointments: todayApts.length,
-        pendingApprovals: pendingDoctors.length
+        pendingApprovals: pendingDoctors.length,
       });
-      
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch (err) {
+      console.error('fetchAllData error:', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, []);
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
-  };
+  const fetchHospital = useCallback(async (id) => {
+    if (!id) return;
+    try {
+      const res = await axios.get(`${API_Hospital}/${id}`, { headers: authHeaders() });
+      setHospital(res.data.hospital || res.data);
+    } catch (err) {
+      console.log('fetchHospital error:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    setAdminName(localStorage.getItem('username') || 'Admin');
+    setHospitalName(localStorage.getItem('hospitalName') || 'Your Hospital');
+    const hid = localStorage.getItem('hospitalId') || '';
+    setHospitalId(hid);
+    fetchAllData();
+    if (hid) fetchHospital(hid);
+  }, [fetchAllData, fetchHospital]);
+
+  const formatDate = (v) => v ? new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
 
   const handleApproveDoctor = async (doctorId) => {
-    const token = localStorage.getItem('token');
     try {
-      await axios.put(`${API_Doctor}${Approve_Doctor}/${doctorId}`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.put(`${API_Doctor}${Approve_Doctor}/${doctorId}`, {}, { headers: authHeaders() });
+      showToast('Doctor approved');
       await fetchAllData();
     } catch (err) {
-      alert(err.response?.data?.msg || 'Failed to approve doctor');
+      showToast(err.response?.data?.msg || 'Failed to approve', 'error');
     }
   };
 
   const handleRejectDoctor = async (doctorId) => {
     const reason = window.prompt('Reason for rejection (optional):', '');
     if (reason === null) return;
-    const token = localStorage.getItem('token');
     try {
-      await axios.put(`${API_Doctor}${Reject_Doctor}/${doctorId}`, { reason }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.put(`${API_Doctor}${Reject_Doctor}/${doctorId}`, { reason }, { headers: authHeaders() });
+      showToast('Doctor rejected');
       await fetchAllData();
     } catch (err) {
-      alert(err.response?.data?.msg || 'Failed to reject doctor');
+      showToast(err.response?.data?.msg || 'Failed to reject', 'error');
     }
   };
 
-  const getRecentAppointments = () => {
-    return [...appointments]
-      .sort((a, b) => new Date(b.createdAt || b.appointmentDate) - new Date(a.createdAt || a.appointmentDate))
-      .slice(0, 5);
+  const handleDeleteDoctor = async (doctorId, name) => {
+    if (!window.confirm(`Delete ${name}? This cannot be undone.`)) return;
+    try {
+      await axios.delete(`${API_Doctor}${Delete_Doctor}/${doctorId}`, { headers: authHeaders() });
+      showToast('Doctor deleted');
+      await fetchAllData();
+    } catch (err) {
+      showToast(err.response?.data?.msg || 'Failed to delete', 'error');
+    }
   };
+
+  const handleCancelAppointment = async (appointmentId) => {
+    const reason = window.prompt('Reason for cancellation:', '');
+    if (reason === null) return;
+    try {
+      await axios.put(`${API_Appointment}${Cancel_Appointment}/${appointmentId}`, { cancelReason: reason }, { headers: authHeaders() });
+      showToast('Appointment cancelled');
+      await fetchAllData();
+    } catch (err) {
+      showToast(err.response?.data?.msg || 'Failed to cancel', 'error');
+    }
+  };
+
+  const handleUpdateAppointmentStatus = async (appointmentId, status) => {
+    try {
+      await axios.put(`${API_Appointment}${Update_Appointment}/${appointmentId}`, { status }, { headers: authHeaders() });
+      showToast(`Appointment marked as ${status}`);
+      await fetchAllData();
+    } catch (err) {
+      showToast(err.response?.data?.msg || 'Failed to update', 'error');
+    }
+  };
+
+  const handleUpdateHospital = async (patch) => {
+    if (!hospitalId) return showToast('No hospital linked to your account', 'error');
+    try {
+      const res = await axios.put(`${API_Hospital}/${hospitalId}`, patch, { headers: authHeaders() });
+      setHospital(res.data.hospital || res.data);
+      showToast('Hospital info updated');
+    } catch (err) {
+      showToast(err.response?.data?.msg || 'Failed to update hospital', 'error');
+    }
+  };
+
+  const openDetails = (title, node) => setModal({ title, body: node });
 
   const handleLogout = () => {
     localStorage.clear();
     navigate('/');
   };
 
+  const unreadCount = notifications.filter(n => !n.read).length;
+  const recentAppointments = [...appointments]
+    .sort((a, b) => new Date(b.createdAt || b.appointmentDate) - new Date(a.createdAt || a.appointmentDate))
+    .slice(0, 5);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 animate-fade-in">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {toast && (
+        <div className={`fixed top-4 right-4 z-[60] px-4 py-3 rounded-lg shadow-lg text-white ${toast.type === 'error' ? 'bg-red-600' : 'bg-green-600'}`}>
+          {toast.message}
+        </div>
+      )}
+
+      {modal && (
+        <Modal title={modal.title} onClose={() => setModal(null)}>{modal.body}</Modal>
+      )}
+
       <div className="flex">
-        {/* Mobile sidebar overlay */}
         {sidebarOpen && (
           <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
         )}
 
-        {/* Sidebar */}
         <aside className={`fixed md:sticky top-0 left-0 z-50 w-64 bg-white shadow-lg min-h-screen h-screen overflow-y-auto p-6 transition-transform duration-300 md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <FaHospital className="text-green-600 text-3xl" />
-              <div>
-                <h2 className="font-bold text-gray-800 text-lg">{hospitalName}</h2>
+              <div className="min-w-0">
+                <h2 className="font-bold text-gray-800 text-base truncate">{hospitalName}</h2>
                 <p className="text-xs text-gray-500">Admin Portal</p>
               </div>
             </div>
           </div>
 
           <nav className="flex flex-col gap-2">
-            <NavItem 
-              icon={<FaChartLine />} 
-              label="Dashboard" 
-              active={activeTab === 'dashboard'}
-              onClick={() => { setActiveTab('dashboard'); setSidebarOpen(false); }}
-            />
-            <NavItem 
-              icon={<FaUserMd />} 
-              label="Manage Doctors" 
-              active={activeTab === 'doctors'}
-              onClick={() => { setActiveTab('doctors'); setSidebarOpen(false); }}
-            />
-            <NavItem 
-              icon={<FaUsers />} 
-              label="Manage Patients" 
-              active={activeTab === 'patients'}
-              onClick={() => { setActiveTab('patients'); setSidebarOpen(false); }}
-            />
-            <NavItem 
-              icon={<FaCalendarAlt />} 
-              label="Appointments" 
-              active={activeTab === 'appointments'}
-              onClick={() => { setActiveTab('appointments'); setSidebarOpen(false); }}
-            />
-            <NavItem 
-              icon={<FaFileMedical />} 
-              label="Reports & Analytics" 
-              active={activeTab === 'reports'}
-              onClick={() => { setActiveTab('reports'); setSidebarOpen(false); }}
-            />
-            <NavItem 
-              icon={<FaCog />} 
-              label="Settings" 
-              active={activeTab === 'settings'}
-              onClick={() => { setActiveTab('settings'); setSidebarOpen(false); }}
-            />
-            
+            <NavItem icon={<FaChartLine />} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setSidebarOpen(false); }} />
+            <NavItem icon={<FaUserMd />} label="Manage Doctors" active={activeTab === 'doctors'} onClick={() => { setActiveTab('doctors'); setSidebarOpen(false); }} />
+            <NavItem icon={<FaUsers />} label="Manage Patients" active={activeTab === 'patients'} onClick={() => { setActiveTab('patients'); setSidebarOpen(false); }} />
+            <NavItem icon={<FaCalendarAlt />} label="Appointments" active={activeTab === 'appointments'} onClick={() => { setActiveTab('appointments'); setSidebarOpen(false); }} />
+            <NavItem icon={<FaFileMedical />} label="Reports & Analytics" active={activeTab === 'reports'} onClick={() => { setActiveTab('reports'); setSidebarOpen(false); }} />
+            <NavItem icon={<FaCog />} label="Settings" active={activeTab === 'settings'} onClick={() => { setActiveTab('settings'); setSidebarOpen(false); }} />
             <hr className="my-4" />
-            
-            <button 
-              onClick={handleLogout}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors text-left w-full"
-            >
+            <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors text-left w-full">
               <FaSignOutAlt /> Logout
             </button>
           </nav>
         </aside>
 
-        {/* Main Content */}
         <main className="flex-1 p-3 sm:p-6 min-w-0">
-          {/* Mobile header */}
-          <div className="md:hidden flex items-center gap-3 mb-4">
-            <button onClick={() => setSidebarOpen(true)} className="p-2 bg-white rounded-lg shadow">
-              <FaBars className="text-green-600 text-xl" />
-            </button>
-            <h2 className="text-lg font-bold text-gray-800">Hospital Admin</h2>
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="md:hidden flex items-center gap-3">
+              <button onClick={() => setSidebarOpen(true)} className="p-2 bg-white rounded-lg shadow">
+                <FaBars className="text-green-600 text-xl" />
+              </button>
+              <h2 className="text-lg font-bold text-gray-800">Hospital Admin</h2>
+            </div>
+
+            <div className="ml-auto flex items-center gap-2">
+              <button onClick={fetchAllData} disabled={refreshing} className="p-2 bg-white rounded-lg shadow hover:bg-gray-50 disabled:opacity-50" title="Refresh">
+                <FaRedo className={`text-gray-700 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
+              <div className="relative">
+                <button onClick={() => setNotifOpen(o => !o)} className="p-2 bg-white rounded-lg shadow hover:bg-gray-50 relative" title="Notifications">
+                  <FaBell className="text-gray-700" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 min-w-[20px] px-1 flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+                {notifOpen && (
+                  <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-lg shadow-xl border z-50">
+                    <div className="px-4 py-3 border-b flex justify-between items-center">
+                      <span className="font-semibold text-gray-800">Notifications</span>
+                      <button onClick={() => setNotifOpen(false)} className="text-gray-400 hover:text-gray-700"><FaTimes /></button>
+                    </div>
+                    {notifications.length === 0 ? (
+                      <p className="p-6 text-center text-gray-500 text-sm">No notifications yet</p>
+                    ) : (
+                      <ul>
+                        {notifications.slice(0, 15).map(n => (
+                          <li key={n._id} className={`p-3 border-b text-sm ${!n.read ? 'bg-blue-50' : ''}`}>
+                            <p className="font-medium text-gray-800">{n.title}</p>
+                            {n.message && <p className="text-gray-600 mt-0.5">{n.message}</p>}
+                            <p className="text-xs text-gray-400 mt-1">{formatDate(n.createdAt)}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Welcome */}
           <div className="bg-white p-4 sm:p-6 rounded-xl shadow mb-6">
             <h2 className="text-xl sm:text-2xl font-semibold">Welcome, {adminName}</h2>
-            <p className="text-gray-600 text-sm sm:text-base">Here's an overview of the hospital's performance and activity.</p>
+            <p className="text-gray-600 text-sm sm:text-base">Overview of {hospitalName || 'your hospital'}.</p>
           </div>
 
-          {/* Content based on active tab */}
-          {activeTab === 'dashboard' && (
-            <DashboardView 
-              stats={stats} 
-              appointments={getRecentAppointments()}
-              doctors={doctors}
-              loading={loading}
-              formatDate={formatDate}
-            />
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading data…</p>
+            </div>
+          ) : (
+            <>
+              {activeTab === 'dashboard' && (
+                <DashboardView
+                  stats={stats}
+                  appointments={recentAppointments}
+                  doctors={doctors}
+                  formatDate={formatDate}
+                  onGoToTab={setActiveTab}
+                  onApprove={handleApproveDoctor}
+                  onReject={handleRejectDoctor}
+                  onView={(doc) => openDetails('Doctor Details', <DoctorDetails d={doc} />)}
+                />
+              )}
+              {activeTab === 'doctors' && (
+                <DoctorsView
+                  doctors={doctors}
+                  onApprove={handleApproveDoctor}
+                  onReject={handleRejectDoctor}
+                  onDelete={handleDeleteDoctor}
+                  onView={(doc) => openDetails('Doctor Details', <DoctorDetails d={doc} />)}
+                />
+              )}
+              {activeTab === 'patients' && (
+                <PatientsView
+                  patients={patients}
+                  formatDate={formatDate}
+                  onView={(p) => openDetails('Patient Details', <PatientDetails p={p} formatDate={formatDate} />)}
+                />
+              )}
+              {activeTab === 'appointments' && (
+                <AppointmentsView
+                  appointments={appointments}
+                  formatDate={formatDate}
+                  onCancel={handleCancelAppointment}
+                  onStatus={handleUpdateAppointmentStatus}
+                  onView={(a) => openDetails('Appointment Details', <AppointmentDetails a={a} formatDate={formatDate} />)}
+                />
+              )}
+              {activeTab === 'reports' && (
+                <ReportsView stats={stats} appointments={appointments} doctors={doctors} />
+              )}
+              {activeTab === 'settings' && (
+                <SettingsView
+                  hospital={hospital}
+                  hospitalName={hospitalName}
+                  onSave={handleUpdateHospital}
+                />
+              )}
+            </>
           )}
-          {activeTab === 'doctors' && (
-            <DoctorsView 
-              doctors={doctors} 
-              loading={loading}
-              onApprove={handleApproveDoctor}
-              onReject={handleRejectDoctor}
-            />
-          )}
-          {activeTab === 'patients' && (
-            <PatientsView 
-              patients={patients} 
-              loading={loading}
-              formatDate={formatDate}
-            />
-          )}
-          {activeTab === 'appointments' && (
-            <AppointmentsView 
-              appointments={appointments} 
-              loading={loading}
-              formatDate={formatDate}
-            />
-          )}
-          {activeTab === 'reports' && (
-            <ReportsView 
-              stats={stats}
-              appointments={appointments}
-            />
-          )}
-          {activeTab === 'settings' && <SettingsView hospitalName={hospitalName} />}
         </main>
       </div>
     </div>
   );
 };
 
-// Navigation Item Component
 const NavItem = ({ icon, label, active, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left w-full ${
-      active ? 'bg-green-50 text-green-600 font-semibold' : 'text-gray-700 hover:bg-gray-50 hover:text-green-600'
-    }`}
-  >
+  <button onClick={onClick} className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left w-full ${active ? 'bg-green-50 text-green-600 font-semibold' : 'text-gray-700 hover:bg-gray-50 hover:text-green-600'}`}>
     {icon} <span>{label}</span>
   </button>
 );
 
-// Dashboard View - Dynamic
-const DashboardView = ({ stats, appointments, doctors, loading, formatDate }) => (
-  <>
-    {loading ? (
-      <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading dashboard data...</p>
+const Modal = ({ title, children, onClose }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="flex justify-between items-center p-4 border-b sticky top-0 bg-white">
+        <h3 className="text-lg font-bold text-gray-800">{title}</h3>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-700 p-1"><FaTimes /></button>
       </div>
-    ) : (
-      <>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 animate-stagger">
-          <StatCard icon={<FaUserMd className="text-3xl" />} title="Total Doctors" count={stats.totalDoctors} color="blue" />
-          <StatCard icon={<FaUsers className="text-3xl" />} title="Total Patients" count={stats.totalPatients} color="green" />
-          <StatCard icon={<FaCalendarAlt className="text-3xl" />} title="Today's Appointments" count={stats.todayAppointments} color="purple" />
-          <StatCard icon={<FaClock className="text-3xl" />} title="Pending Approvals" count={stats.pendingApprovals} color="yellow" />
+      <div className="p-6">{children}</div>
+    </div>
+  </div>
+);
+
+const DetailRow = ({ icon, label, value }) => (
+  <div className="flex items-start gap-3 py-2 border-b last:border-b-0">
+    <div className="text-green-600 mt-1">{icon}</div>
+    <div className="min-w-0 flex-1">
+      <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
+      <p className="text-gray-800 font-medium break-words">{value || 'N/A'}</p>
+    </div>
+  </div>
+);
+
+const DoctorDetails = ({ d }) => (
+  <div>
+    <DetailRow icon={<FaUserMd />} label="Full Name" value={d.fullName || d.username} />
+    <DetailRow icon={<FaEnvelope />} label="Email" value={d.email} />
+    <DetailRow icon={<FaPhone />} label="Phone" value={d.phone} />
+    <DetailRow icon={<FaIdBadge />} label="Specialization" value={d.specialization} />
+    <DetailRow icon={<FaIdBadge />} label="License Number" value={d.licenseNumber} />
+    <DetailRow icon={<FaVenusMars />} label="Gender" value={d.gender} />
+    <DetailRow icon={<FaHospital />} label="Hospital" value={d.hospitalId?.name || d.hospitalName || 'Not assigned'} />
+    <DetailRow icon={<FaCheckCircle />} label="Approved" value={d.isApproved ? 'Yes' : 'Pending'} />
+    <DetailRow icon={<FaClock />} label="Experience" value={d.experience} />
+  </div>
+);
+
+const PatientDetails = ({ p, formatDate }) => (
+  <div>
+    <DetailRow icon={<FaUsers />} label="Full Name" value={p.fullName || p.username} />
+    <DetailRow icon={<FaEnvelope />} label="Email" value={p.email} />
+    <DetailRow icon={<FaPhone />} label="Phone" value={p.phone} />
+    <DetailRow icon={<FaBirthdayCake />} label="Date of Birth" value={p.dateOfBirth ? formatDate(p.dateOfBirth) : 'N/A'} />
+    <DetailRow icon={<FaVenusMars />} label="Gender" value={p.gender} />
+    <DetailRow icon={<FaMapMarkerAlt />} label="City" value={p.address?.city} />
+    <DetailRow icon={<FaFileMedical />} label="Blood Group" value={p.bloodGroup} />
+    <DetailRow icon={<FaFileMedical />} label="Allergies" value={p.allergies} />
+  </div>
+);
+
+const AppointmentDetails = ({ a, formatDate }) => (
+  <div>
+    <DetailRow icon={<FaUsers />} label="Patient" value={a.patientName} />
+    <DetailRow icon={<FaUserMd />} label="Doctor" value={a.doctorId?.fullName || a.doctorId?.username} />
+    <DetailRow icon={<FaCalendarAlt />} label="Date" value={formatDate(a.appointmentDate)} />
+    <DetailRow icon={<FaClock />} label="Time" value={a.appointmentTime} />
+    <DetailRow icon={<FaFileMedical />} label="Symptoms" value={a.symptoms} />
+    <DetailRow icon={<FaFileMedical />} label="Notes" value={a.notes} />
+    <DetailRow icon={<FaCheckCircle />} label="Status" value={a.status} />
+    <DetailRow icon={<FaFileMedical />} label="Prescription" value={a.prescription} />
+  </div>
+);
+
+const DashboardView = ({ stats, appointments, doctors, formatDate, onGoToTab, onApprove, onReject, onView }) => (
+  <>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      <StatCard icon={<FaUserMd className="text-3xl" />} title="Total Doctors" count={stats.totalDoctors} color="blue" onClick={() => onGoToTab('doctors')} />
+      <StatCard icon={<FaUsers className="text-3xl" />} title="Total Patients" count={stats.totalPatients} color="green" onClick={() => onGoToTab('patients')} />
+      <StatCard icon={<FaCalendarAlt className="text-3xl" />} title="Today's Appointments" count={stats.todayAppointments} color="purple" onClick={() => onGoToTab('appointments')} />
+      <StatCard icon={<FaClock className="text-3xl" />} title="Pending Approvals" count={stats.pendingApprovals} color="yellow" onClick={() => onGoToTab('doctors')} />
+    </div>
+
+    <div className="grid lg:grid-cols-2 gap-6 mb-6">
+      <div className="bg-white p-6 rounded-xl shadow-md">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><FaChartLine className="text-green-600" /> Recent Appointments</h3>
+        {appointments.length > 0 ? (
+          <ul className="space-y-3">
+            {appointments.map(apt => (
+              <ActivityLog
+                key={apt._id}
+                item={`${apt.patientName} — ${apt.doctorId?.fullName ? 'Dr. ' + apt.doctorId.fullName : 'Doctor'}`}
+                time={`${formatDate(apt.appointmentDate)} • ${apt.appointmentTime || ''}`}
+                type={apt.status === 'Confirmed' ? 'success' : apt.status === 'Pending' ? 'warning' : 'info'}
+              />
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-500 text-center py-4">No recent appointments</p>
+        )}
+      </div>
+
+      <div className="bg-white p-6 rounded-xl shadow-md">
+        <h3 className="text-xl font-semibold mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <QuickActionBtn icon={<FaUserMd />} label="Doctors" onClick={() => onGoToTab('doctors')} />
+          <QuickActionBtn icon={<FaUsers />} label="Patients" onClick={() => onGoToTab('patients')} />
+          <QuickActionBtn icon={<FaCalendarAlt />} label="Appointments" onClick={() => onGoToTab('appointments')} />
+          <QuickActionBtn icon={<FaFileMedical />} label="Reports" onClick={() => onGoToTab('reports')} />
         </div>
+      </div>
+    </div>
 
-        <div className="grid lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white p-6 rounded-xl shadow-md">
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <FaChartLine className="text-green-600" /> Recent Appointments
-            </h3>
-            {appointments.length > 0 ? (
-              <ul className="space-y-3">
-                {appointments.map((apt) => (
-                  <ActivityLog 
-                    key={apt._id}
-                    item={`${apt.patientName} - ${apt.doctorId?.fullName || 'Doctor'}`} 
-                    time={formatDate(apt.appointmentDate)} 
-                    type={apt.status === 'Confirmed' ? 'success' : apt.status === 'Pending' ? 'warning' : 'info'} 
-                  />
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-500 text-center py-4">No recent appointments</p>
-            )}
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-md">
-            <h3 className="text-xl font-semibold mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <QuickActionBtn icon={<FaPlus />} label="Add Doctor" />
-              <QuickActionBtn icon={<FaPlus />} label="Add Patient" />
-              <QuickActionBtn icon={<FaCalendarAlt />} label="Schedule" />
-              <QuickActionBtn icon={<FaFileMedical />} label="Report" />
+    <div className="bg-white p-6 rounded-xl shadow-md">
+      <h3 className="text-xl font-semibold mb-4">Pending Doctor Approvals</h3>
+      {doctors.filter(d => d.isApproved === false).length > 0 ? (
+        <div className="space-y-3">
+          {doctors.filter(d => d.isApproved === false).slice(0, 4).map(doc => (
+            <div key={doc._id} className="border rounded-lg p-4 flex justify-between items-center gap-3 flex-wrap">
+              <div className="min-w-0">
+                <p className="font-semibold">Dr. {doc.fullName || doc.username}</p>
+                <p className="text-sm text-gray-600">{doc.specialization || 'General'} • License: {doc.licenseNumber || 'N/A'}</p>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <button onClick={() => onView(doc)} className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200" title="View"><FaEye /></button>
+                <button onClick={() => onApprove(doc._id)} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-1"><FaCheckCircle /> Approve</button>
+                <button onClick={() => onReject(doc._id)} className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 flex items-center gap-1"><FaTimes /> Reject</button>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-md">
-          <h3 className="text-xl font-semibold mb-4">Doctors Overview</h3>
-          {doctors.length > 0 ? (
-            <div className="space-y-3">
-              {doctors.slice(0, 3).map((doc) => (
-                <DoctorApprovalCard 
-                  key={doc._id}
-                  name={`Dr. ${doc.fullName}`} 
-                  specialty={doc.specialization || 'General'} 
-                  license={doc.licenseNumber || 'N/A'} 
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-center py-4">No doctors registered yet</p>
-          )}
-        </div>
-      </>
-    )}
+      ) : (
+        <p className="text-gray-500 text-center py-4">All doctors are approved.</p>
+      )}
+    </div>
   </>
 );
 
-// Doctors View - Dynamic
-const DoctorsView = ({ doctors, loading, onApprove, onReject }) => (
-  <div className="bg-white p-6 rounded-xl shadow-md">
-    <div className="flex justify-between items-center mb-6">
-      <h2 className="text-2xl font-bold">Manage Doctors</h2>
-    </div>
-    {loading ? (
-      <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600 mx-auto"></div>
-      </div>
-    ) : doctors.length > 0 ? (
-      <div className="space-y-4">
-        {doctors.map((doc) => (
-          <DoctorCard 
-            key={doc._id}
-            doctor={doc}
-            onApprove={onApprove}
-            onReject={onReject}
-          />
-        ))}
-      </div>
-    ) : (
-      <div className="text-center py-8">
-        <FaUserMd className="text-gray-300 text-5xl mx-auto mb-4" />
-        <p className="text-gray-500">No doctors registered yet</p>
-      </div>
-    )}
-  </div>
-);
-
-// Patients View - Dynamic
-const PatientsView = ({ patients, loading, formatDate }) => (
-  <div className="bg-white p-6 rounded-xl shadow-md">
-    <div className="flex justify-between items-center mb-6">
-      <h2 className="text-2xl font-bold">Manage Patients</h2>
-      <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
-        <FaPlus /> Register Patient
-      </button>
-    </div>
-    {loading ? (
-      <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600 mx-auto"></div>
-      </div>
-    ) : patients.length > 0 ? (
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {patients.map((patient) => (
-          <PatientCard 
-            key={patient._id}
-            name={patient.fullName} 
-            age={patient.age || 'N/A'} 
-            lastVisit={patient.updatedAt ? formatDate(patient.updatedAt) : 'N/A'} 
-          />
-        ))}
-      </div>
-    ) : (
-      <div className="text-center py-8">
-        <FaUsers className="text-gray-300 text-5xl mx-auto mb-4" />
-        <p className="text-gray-500">No patients registered yet</p>
-      </div>
-    )}
-  </div>
-);
-
-// Appointments View - Dynamic
-const AppointmentsView = ({ appointments, loading, formatDate }) => (
-  <div className="bg-white p-6 rounded-xl shadow-md">
-    <h2 className="text-2xl font-bold mb-6">All Appointments</h2>
-    {loading ? (
-      <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600 mx-auto"></div>
-      </div>
-    ) : appointments.length > 0 ? (
-      <div className="space-y-3">
-        {appointments.map((apt) => (
-          <AppointmentCard 
-            key={apt._id}
-            patient={apt.patientName} 
-            doctor={apt.doctorId?.fullName ? `Dr. ${apt.doctorId.fullName}` : 'Doctor'} 
-            time={`${formatDate(apt.appointmentDate)} at ${apt.appointmentTime}`} 
-            status={apt.status} 
-          />
-        ))}
-      </div>
-    ) : (
-      <div className="text-center py-8">
-        <FaCalendarAlt className="text-gray-300 text-5xl mx-auto mb-4" />
-        <p className="text-gray-500">No appointments yet</p>
-      </div>
-    )}
-  </div>
-);
-
-// Reports View - Dynamic
-const ReportsView = ({ stats, appointments }) => {
-  // Calculate stats from appointments
-  const completedApts = appointments.filter(apt => apt.status === 'Completed').length;
-  const cancelledApts = appointments.filter(apt => apt.status === 'Cancelled').length;
-  const completionRate = appointments.length > 0 
-    ? Math.round((completedApts / appointments.length) * 100) 
-    : 0;
+const DoctorsView = ({ doctors, onApprove, onReject, onDelete, onView }) => {
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
+  const filtered = doctors.filter(d => {
+    const q = search.toLowerCase();
+    const matchQ = !q || (d.fullName || '').toLowerCase().includes(q) || (d.email || '').toLowerCase().includes(q) || (d.specialization || '').toLowerCase().includes(q);
+    const matchF = filter === 'all' || (filter === 'pending' && !d.isApproved) || (filter === 'approved' && d.isApproved);
+    return matchQ && matchF;
+  });
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-md">
-      <h2 className="text-2xl font-bold mb-6">Reports & Analytics</h2>
-      <div className="grid md:grid-cols-3 gap-6 mb-6">
-        <ReportCard title="Total Appointments" value={appointments.length.toString()} change={`${stats.todayAppointments} today`} />
-        <ReportCard title="Completion Rate" value={`${completionRate}%`} change={`${completedApts} completed`} />
-        <ReportCard title="Cancellation Rate" value={`${appointments.length > 0 ? Math.round((cancelledApts / appointments.length) * 100) : 0}%`} change={`${cancelledApts} cancelled`} />
-      </div>
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="font-semibold mb-3">Doctors Summary</h3>
-          <p className="text-3xl font-bold text-blue-600">{stats.totalDoctors}</p>
-          <p className="text-sm text-gray-500">Registered doctors</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        <h2 className="text-2xl font-bold">Manage Doctors ({filtered.length})</h2>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-none">
+            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…" className="pl-9 pr-3 py-2 border rounded-lg w-full sm:w-64" />
+          </div>
+          <select value={filter} onChange={e => setFilter(e.target.value)} className="px-3 py-2 border rounded-lg">
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+          </select>
         </div>
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="font-semibold mb-3">Patients Summary</h3>
-          <p className="text-3xl font-bold text-green-600">{stats.totalPatients}</p>
-          <p className="text-sm text-gray-500">Registered patients</p>
+      </div>
+
+      {filtered.length > 0 ? (
+        <div className="space-y-3">
+          {filtered.map(doc => (
+            <div key={doc._id} className="border rounded-lg p-4 flex justify-between items-center gap-3 flex-wrap hover:shadow-sm transition-shadow">
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">Dr. {doc.fullName || doc.username}</p>
+                <p className="text-sm text-gray-600">{doc.specialization || 'General'} • License: {doc.licenseNumber || 'N/A'}</p>
+                <p className="text-xs text-gray-500 truncate">{doc.email}</p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${doc.isApproved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                  {doc.isApproved ? 'Active' : 'Pending'}
+                </span>
+                <button onClick={() => onView(doc)} className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200" title="View"><FaEye /></button>
+                {!doc.isApproved && (
+                  <>
+                    <button onClick={() => onApprove(doc._id)} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">Approve</button>
+                    <button onClick={() => onReject(doc._id)} className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Reject</button>
+                  </>
+                )}
+                <button onClick={() => onDelete(doc._id, `Dr. ${doc.fullName || doc.username}`)} className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200" title="Delete"><FaTrash /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8">
+          <FaUserMd className="text-gray-300 text-5xl mx-auto mb-4" />
+          <p className="text-gray-500">No doctors match your filters</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PatientsView = ({ patients, formatDate, onView }) => {
+  const [search, setSearch] = useState('');
+  const filtered = patients.filter(p => {
+    const q = search.toLowerCase();
+    return !q || (p.fullName || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q);
+  });
+
+  return (
+    <div className="bg-white p-6 rounded-xl shadow-md">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        <h2 className="text-2xl font-bold">Registered Patients ({filtered.length})</h2>
+        <div className="relative w-full sm:w-64">
+          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search patients…" className="pl-9 pr-3 py-2 border rounded-lg w-full" />
+        </div>
+      </div>
+
+      {filtered.length > 0 ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map(p => (
+            <div key={p._id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+              <p className="font-semibold">{p.fullName || p.username}</p>
+              <p className="text-sm text-gray-600 truncate">{p.email}</p>
+              <p className="text-xs text-gray-500 mt-1">Joined: {formatDate(p.createdAt)}</p>
+              <button onClick={() => onView(p)} className="mt-3 w-full px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm flex items-center justify-center gap-1">
+                <FaEye /> View Details
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8">
+          <FaUsers className="text-gray-300 text-5xl mx-auto mb-4" />
+          <p className="text-gray-500">No patients found</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AppointmentsView = ({ appointments, formatDate, onCancel, onStatus, onView }) => {
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const filtered = appointments.filter(a => {
+    const q = search.toLowerCase();
+    const matchQ = !q || (a.patientName || '').toLowerCase().includes(q) || (a.doctorId?.fullName || '').toLowerCase().includes(q);
+    const matchS = statusFilter === 'all' || a.status === statusFilter;
+    return matchQ && matchS;
+  });
+
+  const statusColors = {
+    Confirmed: 'bg-green-100 text-green-700',
+    Pending: 'bg-yellow-100 text-yellow-700',
+    Completed: 'bg-blue-100 text-blue-700',
+    Cancelled: 'bg-red-100 text-red-700',
+    NoShow: 'bg-gray-200 text-gray-700',
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-xl shadow-md">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        <h2 className="text-2xl font-bold">Appointments ({filtered.length})</h2>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-none">
+            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…" className="pl-9 pr-3 py-2 border rounded-lg w-full sm:w-56" />
+          </div>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border rounded-lg">
+            <option value="all">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+            <option value="NoShow">No Show</option>
+          </select>
+        </div>
+      </div>
+
+      {filtered.length > 0 ? (
+        <div className="space-y-3">
+          {filtered.map(a => (
+            <div key={a._id} className="border rounded-lg p-4 flex justify-between items-center gap-3 flex-wrap">
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">{a.patientName}</p>
+                <p className="text-sm text-gray-600">{a.doctorId?.fullName ? `Dr. ${a.doctorId.fullName}` : 'Doctor'} • {formatDate(a.appointmentDate)} at {a.appointmentTime}</p>
+                {a.symptoms && <p className="text-xs text-gray-500 truncate mt-1">Symptoms: {a.symptoms}</p>}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[a.status] || 'bg-gray-100 text-gray-700'}`}>{a.status}</span>
+                <button onClick={() => onView(a)} className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200" title="View"><FaEye /></button>
+                {a.status === 'Pending' && (
+                  <button onClick={() => onStatus(a._id, 'Confirmed')} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">Confirm</button>
+                )}
+                {(a.status === 'Pending' || a.status === 'Confirmed') && (
+                  <>
+                    <button onClick={() => onStatus(a._id, 'Completed')} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Complete</button>
+                    <button onClick={() => onCancel(a._id)} className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Cancel</button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8">
+          <FaCalendarAlt className="text-gray-300 text-5xl mx-auto mb-4" />
+          <p className="text-gray-500">No appointments match your filters</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ReportsView = ({ stats, appointments, doctors }) => {
+  const completed = appointments.filter(a => a.status === 'Completed').length;
+  const cancelled = appointments.filter(a => a.status === 'Cancelled').length;
+  const pending = appointments.filter(a => a.status === 'Pending').length;
+  const confirmed = appointments.filter(a => a.status === 'Confirmed').length;
+  const completionRate = appointments.length > 0 ? Math.round((completed / appointments.length) * 100) : 0;
+  const approvedDoctors = doctors.filter(d => d.isApproved).length;
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-xl shadow-md">
+        <h2 className="text-2xl font-bold mb-6">Reports & Analytics</h2>
+        <div className="grid md:grid-cols-3 gap-4 mb-6">
+          <ReportCard title="Total Appointments" value={appointments.length} change={`${stats.todayAppointments} today`} />
+          <ReportCard title="Completion Rate" value={`${completionRate}%`} change={`${completed} completed`} />
+          <ReportCard title="Cancellation Rate" value={`${appointments.length ? Math.round((cancelled / appointments.length) * 100) : 0}%`} change={`${cancelled} cancelled`} />
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <MiniStat label="Pending" value={pending} color="yellow" />
+          <MiniStat label="Confirmed" value={confirmed} color="green" />
+          <MiniStat label="Completed" value={completed} color="blue" />
+          <MiniStat label="Cancelled" value={cancelled} color="red" />
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h3 className="text-lg font-semibold mb-4">Doctors Summary</h3>
+          <p className="text-4xl font-bold text-blue-600">{stats.totalDoctors}</p>
+          <p className="text-sm text-gray-500">Total registered doctors</p>
+          <div className="mt-4 space-y-2">
+            <div className="flex justify-between text-sm"><span>Approved:</span><span className="font-semibold text-green-600">{approvedDoctors}</span></div>
+            <div className="flex justify-between text-sm"><span>Pending approval:</span><span className="font-semibold text-yellow-600">{stats.pendingApprovals}</span></div>
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h3 className="text-lg font-semibold mb-4">Patients Summary</h3>
+          <p className="text-4xl font-bold text-green-600">{stats.totalPatients}</p>
+          <p className="text-sm text-gray-500">Registered patients across the platform</p>
         </div>
       </div>
     </div>
   );
 };
 
-// Settings View - Dynamic
-const SettingsView = ({ hospitalName }) => (
-  <div className="bg-white p-6 rounded-xl shadow-md">
-    <h2 className="text-2xl font-bold mb-6">Hospital Settings</h2>
-    <div className="space-y-4">
-      <SettingItem label="Hospital Name" value={hospitalName || 'Not Set'} />
-      <SettingItem label="Address" value="Update in profile" />
-      <SettingItem label="Contact" value="Update in profile" />
+const SettingsView = ({ hospital, hospitalName, onSave }) => {
+  const [form, setForm] = useState({
+    name: hospital?.name || hospitalName || '',
+    description: hospital?.description || '',
+    phone: hospital?.phone || '',
+    email: hospital?.email || '',
+    website: hospital?.website || '',
+    line1: hospital?.address?.line1 || '',
+    city: hospital?.address?.city || '',
+    state: hospital?.address?.state || '',
+    country: hospital?.address?.country || '',
+    postalCode: hospital?.address?.postalCode || '',
+  });
+
+  useEffect(() => {
+    if (hospital) {
+      setForm({
+        name: hospital.name || '',
+        description: hospital.description || '',
+        phone: hospital.phone || '',
+        email: hospital.email || '',
+        website: hospital.website || '',
+        line1: hospital.address?.line1 || '',
+        city: hospital.address?.city || '',
+        state: hospital.address?.state || '',
+        country: hospital.address?.country || '',
+        postalCode: hospital.address?.postalCode || '',
+      });
+    }
+  }, [hospital]);
+
+  const upd = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave({
+      name: form.name,
+      description: form.description,
+      phone: form.phone,
+      email: form.email,
+      website: form.website,
+      address: {
+        line1: form.line1, city: form.city, state: form.state,
+        country: form.country, postalCode: form.postalCode,
+      },
+    });
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-xl shadow-md">
+      <h2 className="text-2xl font-bold mb-6">Hospital Settings</h2>
+      {!hospital ? (
+        <p className="text-gray-500 mb-4">Hospital record not linked to your account. You can still edit local fields below.</p>
+      ) : null}
+      <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-4">
+        <Field label="Hospital Name" value={form.name} onChange={upd('name')} required />
+        <Field label="Email" value={form.email} onChange={upd('email')} type="email" />
+        <Field label="Phone" value={form.phone} onChange={upd('phone')} />
+        <Field label="Website" value={form.website} onChange={upd('website')} />
+        <div className="md:col-span-2">
+          <Field label="Description" value={form.description} onChange={upd('description')} textarea />
+        </div>
+        <Field label="Street Address" value={form.line1} onChange={upd('line1')} />
+        <Field label="City" value={form.city} onChange={upd('city')} />
+        <Field label="State" value={form.state} onChange={upd('state')} />
+        <Field label="Country" value={form.country} onChange={upd('country')} />
+        <Field label="Postal Code" value={form.postalCode} onChange={upd('postalCode')} />
+        <div className="md:col-span-2 flex justify-end">
+          <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
+            <FaSave /> Save Changes
+          </button>
+        </div>
+      </form>
     </div>
-    <button className="mt-6 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
-      Update Settings
-    </button>
-  </div>
+  );
+};
+
+const Field = ({ label, value, onChange, type = 'text', required, textarea }) => (
+  <label className="block">
+    <span className="text-sm font-medium text-gray-700">{label}{required && <span className="text-red-500">*</span>}</span>
+    {textarea ? (
+      <textarea value={value} onChange={onChange} required={required} rows={3} className="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+    ) : (
+      <input type={type} value={value} onChange={onChange} required={required} className="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+    )}
+  </label>
 );
 
-// Component Definitions
-const StatCard = ({ icon, title, count, color }) => {
+const StatCard = ({ icon, title, count, color, onClick }) => {
   const colors = {
     blue: 'text-blue-600 bg-blue-50',
     green: 'text-green-600 bg-green-50',
     purple: 'text-purple-600 bg-purple-50',
     yellow: 'text-yellow-600 bg-yellow-50',
-    indigo: 'text-indigo-600 bg-indigo-50'
   };
   return (
-    <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all">
+    <button onClick={onClick} className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all text-left">
       <div className={`${colors[color] || 'text-gray-600 bg-gray-50'} w-12 h-12 rounded-lg flex items-center justify-center mb-3`}>{icon}</div>
       <p className="text-gray-500 text-sm mb-1">{title}</p>
       <p className="text-2xl font-bold">{count}</p>
-    </div>
+    </button>
   );
 };
 
@@ -526,7 +817,7 @@ const ActivityLog = ({ item, time, type }) => {
   const colors = {
     success: 'border-green-200 bg-green-50',
     info: 'border-blue-200 bg-blue-50',
-    warning: 'border-yellow-200 bg-yellow-50'
+    warning: 'border-yellow-200 bg-yellow-50',
   };
   return (
     <li className={`border-l-4 ${colors[type] || 'border-gray-200 bg-gray-50'} p-3 rounded`}>
@@ -536,78 +827,12 @@ const ActivityLog = ({ item, time, type }) => {
   );
 };
 
-const QuickActionBtn = ({ icon, label }) => (
-  <button className="flex flex-col items-center p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all group">
+const QuickActionBtn = ({ icon, label, onClick }) => (
+  <button onClick={onClick} className="flex flex-col items-center p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all group">
     <div className="text-2xl text-gray-600 group-hover:text-green-600 mb-2">{icon}</div>
     <span className="text-sm font-medium">{label}</span>
   </button>
 );
-
-const DoctorApprovalCard = ({ name, specialty, license }) => (
-  <div className="border rounded-lg p-4 flex justify-between items-center hover:shadow-md transition-shadow">
-    <div>
-      <p className="font-semibold text-gray-800">{name}</p>
-      <p className="text-sm text-gray-600">{specialty} • {license}</p>
-    </div>
-    <div className="flex gap-2">
-      <button className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200"><FaCheckCircle /></button>
-      <button className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"><FaTimes /></button>
-      <button className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"><FaEye /></button>
-    </div>
-  </div>
-);
-
-const DoctorCard = ({ doctor, onApprove, onReject }) => {
-  const isPending = doctor.isApproved === false;
-  const name = `Dr. ${doctor.fullName || doctor.username || ''}`;
-  return (
-    <div className="border rounded-lg p-4 flex justify-between items-center gap-3 flex-wrap">
-      <div className="min-w-0">
-        <p className="font-semibold">{name}</p>
-        <p className="text-sm text-gray-600">{doctor.specialization || 'General'} • License: {doctor.licenseNumber || 'N/A'}</p>
-        <p className="text-xs text-gray-500">{doctor.email}</p>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className={`px-3 py-1 rounded-full text-xs ${isPending ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-          {isPending ? 'Pending approval' : 'Active'}
-        </span>
-        {isPending && (
-          <>
-            <button onClick={() => onApprove && onApprove(doctor._id)} className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">Approve</button>
-            <button onClick={() => onReject && onReject(doctor._id)} className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700">Reject</button>
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const PatientCard = ({ name, age, lastVisit }) => (
-  <div className="border rounded-lg p-4">
-    <p className="font-semibold">{name}</p>
-    <p className="text-sm text-gray-600">Age: {age}</p>
-    <p className="text-xs text-gray-500">Last visit: {lastVisit}</p>
-  </div>
-);
-
-const AppointmentCard = ({ patient, doctor, time, status }) => {
-  const statusColors = {
-    'Confirmed': 'bg-green-100 text-green-700',
-    'Pending': 'bg-yellow-100 text-yellow-700',
-    'Completed': 'bg-blue-100 text-blue-700',
-    'Cancelled': 'bg-red-100 text-red-700',
-    'In Progress': 'bg-purple-100 text-purple-700'
-  };
-  return (
-    <div className="border rounded-lg p-4 flex justify-between items-center">
-      <div>
-        <p className="font-semibold">{patient}</p>
-        <p className="text-sm text-gray-600">{doctor} • {time}</p>
-      </div>
-      <span className={`px-3 py-1 rounded-full text-xs ${statusColors[status] || 'bg-gray-100 text-gray-700'}`}>{status}</span>
-    </div>
-  );
-};
 
 const ReportCard = ({ title, value, change }) => (
   <div className="bg-gray-50 rounded-xl p-6">
@@ -617,11 +842,19 @@ const ReportCard = ({ title, value, change }) => (
   </div>
 );
 
-const SettingItem = ({ label, value }) => (
-  <div className="flex justify-between items-center p-3 border-b">
-    <span className="text-gray-700 font-medium">{label}</span>
-    <span className="text-gray-600">{value}</span>
-  </div>
-);
+const MiniStat = ({ label, value, color }) => {
+  const colors = {
+    yellow: 'text-yellow-700 bg-yellow-50 border-yellow-200',
+    green: 'text-green-700 bg-green-50 border-green-200',
+    blue: 'text-blue-700 bg-blue-50 border-blue-200',
+    red: 'text-red-700 bg-red-50 border-red-200',
+  };
+  return (
+    <div className={`border rounded-lg p-4 ${colors[color]}`}>
+      <p className="text-sm">{label}</p>
+      <p className="text-2xl font-bold">{value}</p>
+    </div>
+  );
+};
 
 export default HospitalAdminDashboard;
