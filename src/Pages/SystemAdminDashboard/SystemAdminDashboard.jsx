@@ -549,9 +549,9 @@ const OverviewView = ({ stats, appointments, doctors, loading, formatDate, onNav
               {doctors.slice(0, 6).map((doc) => (
                 <DoctorCard 
                   key={doc._id}
-                  name={`Dr. ${doc.fullName}`}
+                  name={`Dr. ${doc.fullName || doc.username || 'Unknown'}`}
                   specialty={doc.specialization || 'General'}
-                  hospital={doc.hospitalName || 'N/A'}
+                  hospital={doc.hospitalId?.name || doc.hospitalName || 'N/A'}
                   status={doc.isApproved !== false ? 'Active' : 'Pending'}
                 />
               ))}
@@ -788,15 +788,20 @@ const PatientsView = ({ patients, loading, formatDate }) => (
       </div>
     ) : patients.length > 0 ? (
       <div className="space-y-3">
-        {patients.map((patient) => (
-          <PatientRow 
-            key={patient._id}
-            name={patient.fullName}
-            age={patient.age || 'N/A'}
-            lastVisit={patient.updatedAt ? formatDate(patient.updatedAt) : 'N/A'}
-            email={patient.email || 'N/A'}
-          />
-        ))}
+        {patients.map((patient) => {
+            const dob = patient.dateOfBirth ? new Date(patient.dateOfBirth) : null;
+            const age = dob ? Math.floor((Date.now() - dob) / 31557600000) : null;
+            return (
+              <PatientRow
+                key={patient._id}
+                name={patient.fullName || patient.username || 'Unknown'}
+                age={age ?? 'N/A'}
+                lastVisit={patient.updatedAt ? formatDate(patient.updatedAt) : 'N/A'}
+                email={patient.email || 'N/A'}
+                gender={patient.gender || ''}
+              />
+            );
+          })}
       </div>
     ) : (
       <div className="text-center py-8">
@@ -1126,12 +1131,14 @@ const AdminRow = ({ name, hospital, role, status }) => {
   );
 };
 
-const PatientRow = ({ name, age, lastVisit, email }) => (
+const PatientRow = ({ name, age, lastVisit, email, gender }) => (
   <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
     <div className="flex justify-between items-center">
       <div>
         <p className="font-semibold text-gray-800">{name}</p>
-        <p className="text-sm text-gray-600">Age: {age} • Last visit: {lastVisit}</p>
+        <p className="text-sm text-gray-600">
+          Age: {age}{gender ? ` • ${gender}` : ''} • Last visit: {lastVisit}
+        </p>
         <p className="text-xs text-gray-500">{email}</p>
       </div>
       <button className="text-purple-600 hover:text-purple-700"><FaEye /></button>
