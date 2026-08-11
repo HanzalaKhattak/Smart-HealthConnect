@@ -13,7 +13,7 @@ import {
 } from '../../Components/apis/apisUrl';
 import {
   Get_All_Doctors, Get_All_Users, Get_All_Appointments,
-  Approve_Doctor, Reject_Doctor, Delete_Doctor,
+  Delete_Doctor, Register_Doctor,
   Cancel_Appointment, Update_Appointment, Notif_List
 } from '../../Components/apis/endpoints';
 
@@ -123,28 +123,6 @@ const HospitalAdminDashboard = () => {
 
   const formatDate = (v) => v ? new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
 
-  const handleApproveDoctor = async (doctorId) => {
-    try {
-      await axios.put(`${API_Doctor}${Approve_Doctor}/${doctorId}`, {}, { headers: authHeaders() });
-      showToast('Doctor approved');
-      await fetchAllData();
-    } catch (err) {
-      showToast(err.response?.data?.msg || 'Failed to approve', 'error');
-    }
-  };
-
-  const handleRejectDoctor = async (doctorId) => {
-    const reason = window.prompt('Reason for rejection (optional):', '');
-    if (reason === null) return;
-    try {
-      await axios.put(`${API_Doctor}${Reject_Doctor}/${doctorId}`, { reason }, { headers: authHeaders() });
-      showToast('Doctor rejected');
-      await fetchAllData();
-    } catch (err) {
-      showToast(err.response?.data?.msg || 'Failed to reject', 'error');
-    }
-  };
-
   const handleDeleteDoctor = async (doctorId, name) => {
     if (!window.confirm(`Delete ${name}? This cannot be undone.`)) return;
     try {
@@ -153,6 +131,18 @@ const HospitalAdminDashboard = () => {
       await fetchAllData();
     } catch (err) {
       showToast(err.response?.data?.msg || 'Failed to delete', 'error');
+    }
+  };
+
+  const handleRegisterDoctor = async (form) => {
+    try {
+      await axios.post(`${API_Doctor}${Register_Doctor}`, form, { headers: authHeaders() });
+      showToast('Doctor registered. Awaiting super-admin approval.');
+      await fetchAllData();
+      return true;
+    } catch (err) {
+      showToast(err.response?.data?.msg || 'Failed to register doctor', 'error');
+      return false;
     }
   };
 
@@ -309,17 +299,14 @@ const HospitalAdminDashboard = () => {
                   doctors={doctors}
                   formatDate={formatDate}
                   onGoToTab={setActiveTab}
-                  onApprove={handleApproveDoctor}
-                  onReject={handleRejectDoctor}
                   onView={(doc) => openDetails('Doctor Details', <DoctorDetails d={doc} />)}
                 />
               )}
               {activeTab === 'doctors' && (
                 <DoctorsView
                   doctors={doctors}
-                  onApprove={handleApproveDoctor}
-                  onReject={handleRejectDoctor}
                   onDelete={handleDeleteDoctor}
+                  onRegister={handleRegisterDoctor}
                   onView={(doc) => openDetails('Doctor Details', <DoctorDetails d={doc} />)}
                 />
               )}
@@ -425,13 +412,13 @@ const AppointmentDetails = ({ a, formatDate }) => (
   </div>
 );
 
-const DashboardView = ({ stats, appointments, doctors, formatDate, onGoToTab, onApprove, onReject, onView }) => (
+const DashboardView = ({ stats, appointments, doctors, formatDate, onGoToTab, onView }) => (
   <>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-      <StatCard icon={<FaUserMd className="text-3xl" />} title="Total Doctors" count={stats.totalDoctors} color="blue" onClick={() => onGoToTab('doctors')} />
-      <StatCard icon={<FaUsers className="text-3xl" />} title="Total Patients" count={stats.totalPatients} color="green" onClick={() => onGoToTab('patients')} />
+      <StatCard icon={<FaUserMd className="text-3xl" />} title="Doctors in Hospital" count={stats.totalDoctors} color="blue" onClick={() => onGoToTab('doctors')} />
+      <StatCard icon={<FaUsers className="text-3xl" />} title="Patients Served" count={stats.totalPatients} color="green" onClick={() => onGoToTab('patients')} />
       <StatCard icon={<FaCalendarAlt className="text-3xl" />} title="Today's Appointments" count={stats.todayAppointments} color="purple" onClick={() => onGoToTab('appointments')} />
-      <StatCard icon={<FaClock className="text-3xl" />} title="Pending Approvals" count={stats.pendingApprovals} color="yellow" onClick={() => onGoToTab('doctors')} />
+      <StatCard icon={<FaClock className="text-3xl" />} title="Awaiting Super-Admin" count={stats.pendingApprovals} color="yellow" onClick={() => onGoToTab('doctors')} />
     </div>
 
     <div className="grid lg:grid-cols-2 gap-6 mb-6">
@@ -465,7 +452,7 @@ const DashboardView = ({ stats, appointments, doctors, formatDate, onGoToTab, on
     </div>
 
     <div className="bg-white p-6 rounded-xl shadow-md">
-      <h3 className="text-xl font-semibold mb-4">Pending Doctor Approvals</h3>
+      <h3 className="text-xl font-semibold mb-4">Doctors awaiting super-admin approval</h3>
       {doctors.filter(d => d.isApproved === false).length > 0 ? (
         <div className="space-y-3">
           {doctors.filter(d => d.isApproved === false).slice(0, 4).map(doc => (
@@ -473,25 +460,23 @@ const DashboardView = ({ stats, appointments, doctors, formatDate, onGoToTab, on
               <div className="min-w-0">
                 <p className="font-semibold">Dr. {doc.fullName || doc.username}</p>
                 <p className="text-sm text-gray-600">{doc.specialization || 'General'} • License: {doc.licenseNumber || 'N/A'}</p>
+                <p className="text-xs text-yellow-700">Pending super-administrator approval</p>
               </div>
-              <div className="flex gap-2 flex-wrap">
-                <button onClick={() => onView(doc)} className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200" title="View"><FaEye /></button>
-                <button onClick={() => onApprove(doc._id)} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-1"><FaCheckCircle /> Approve</button>
-                <button onClick={() => onReject(doc._id)} className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 flex items-center gap-1"><FaTimes /> Reject</button>
-              </div>
+              <button onClick={() => onView(doc)} className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200" title="View"><FaEye /></button>
             </div>
           ))}
         </div>
       ) : (
-        <p className="text-gray-500 text-center py-4">All doctors are approved.</p>
+        <p className="text-gray-500 text-center py-4">All your doctors are approved.</p>
       )}
     </div>
   </>
 );
 
-const DoctorsView = ({ doctors, onApprove, onReject, onDelete, onView }) => {
+const DoctorsView = ({ doctors, onDelete, onRegister, onView }) => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
+  const [showRegister, setShowRegister] = useState(false);
   const filtered = doctors.filter(d => {
     const q = search.toLowerCase();
     const matchQ = !q || (d.fullName || '').toLowerCase().includes(q) || (d.email || '').toLowerCase().includes(q) || (d.specialization || '').toLowerCase().includes(q);
@@ -500,54 +485,119 @@ const DoctorsView = ({ doctors, onApprove, onReject, onDelete, onView }) => {
   });
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-md">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-        <h2 className="text-2xl font-bold">Manage Doctors ({filtered.length})</h2>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <div className="relative flex-1 sm:flex-none">
-            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…" className="pl-9 pr-3 py-2 border rounded-lg w-full sm:w-64" />
-          </div>
-          <select value={filter} onChange={e => setFilter(e.target.value)} className="px-3 py-2 border rounded-lg">
-            <option value="all">All</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-          </select>
-        </div>
-      </div>
-
-      {filtered.length > 0 ? (
-        <div className="space-y-3">
-          {filtered.map(doc => (
-            <div key={doc._id} className="border rounded-lg p-4 flex justify-between items-center gap-3 flex-wrap hover:shadow-sm transition-shadow">
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold">Dr. {doc.fullName || doc.username}</p>
-                <p className="text-sm text-gray-600">{doc.specialization || 'General'} • License: {doc.licenseNumber || 'N/A'}</p>
-                <p className="text-xs text-gray-500 truncate">{doc.email}</p>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${doc.isApproved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                  {doc.isApproved ? 'Active' : 'Pending'}
-                </span>
-                <button onClick={() => onView(doc)} className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200" title="View"><FaEye /></button>
-                {!doc.isApproved && (
-                  <>
-                    <button onClick={() => onApprove(doc._id)} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">Approve</button>
-                    <button onClick={() => onReject(doc._id)} className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Reject</button>
-                  </>
-                )}
-                <button onClick={() => onDelete(doc._id, `Dr. ${doc.fullName || doc.username}`)} className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200" title="Delete"><FaTrash /></button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-8">
-          <FaUserMd className="text-gray-300 text-5xl mx-auto mb-4" />
-          <p className="text-gray-500">No doctors match your filters</p>
-        </div>
+    <>
+      {showRegister && (
+        <RegisterDoctorModal
+          onClose={() => setShowRegister(false)}
+          onSubmit={async (payload) => {
+            const ok = await onRegister(payload);
+            if (ok) setShowRegister(false);
+          }}
+        />
       )}
-    </div>
+      <div className="bg-white p-6 rounded-xl shadow-md">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+          <h2 className="text-2xl font-bold">Doctors in your hospital ({filtered.length})</h2>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-none">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…" className="pl-9 pr-3 py-2 border rounded-lg w-full sm:w-64" />
+            </div>
+            <select value={filter} onChange={e => setFilter(e.target.value)} className="px-3 py-2 border rounded-lg">
+              <option value="all">All</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+            </select>
+            <button onClick={() => setShowRegister(true)} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 whitespace-nowrap">
+              <FaPlus /> Add Doctor
+            </button>
+          </div>
+        </div>
+
+        {filtered.length > 0 ? (
+          <div className="space-y-3">
+            {filtered.map(doc => (
+              <div key={doc._id} className="border rounded-lg p-4 flex justify-between items-center gap-3 flex-wrap hover:shadow-sm transition-shadow">
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold">Dr. {doc.fullName || doc.username}</p>
+                  <p className="text-sm text-gray-600">{doc.specialization || 'General'} • License: {doc.licenseNumber || 'N/A'}</p>
+                  <p className="text-xs text-gray-500 truncate">{doc.email}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${doc.isApproved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                    {doc.isApproved ? 'Active' : 'Awaiting Super-Admin'}
+                  </span>
+                  <button onClick={() => onView(doc)} className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200" title="View"><FaEye /></button>
+                  <button onClick={() => onDelete(doc._id, `Dr. ${doc.fullName || doc.username}`)} className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200" title="Delete"><FaTrash /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <FaUserMd className="text-gray-300 text-5xl mx-auto mb-4" />
+            <p className="text-gray-500">No doctors in your hospital yet.</p>
+            <button onClick={() => setShowRegister(true)} className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 inline-flex items-center gap-2">
+              <FaPlus /> Register the first doctor
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
+
+const RegisterDoctorModal = ({ onClose, onSubmit }) => {
+  const [form, setForm] = useState({
+    username: '', fullName: '', email: '', password: '',
+    phone: '', gender: '', specialization: '', licenseNumber: '',
+    experience: '', consultationFee: '', bio: '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const upd = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!form.username || !form.email || !form.password || !form.specialization || !form.licenseNumber) return;
+    setSubmitting(true);
+    const payload = { ...form, consultationFee: Number(form.consultationFee) || 0 };
+    await onSubmit(payload);
+    setSubmitting(false);
+  };
+
+  return (
+    <Modal title="Register a doctor for your hospital" onClose={onClose}>
+      <p className="text-sm text-gray-600 mb-4">The doctor will be linked to your hospital automatically and will be activated only after the super administrator approves the account.</p>
+      <form onSubmit={submit} className="grid md:grid-cols-2 gap-4">
+        <Field label="Username" value={form.username} onChange={upd('username')} required />
+        <Field label="Full name" value={form.fullName} onChange={upd('fullName')} />
+        <Field label="Email" type="email" value={form.email} onChange={upd('email')} required />
+        <Field label="Password" type="password" value={form.password} onChange={upd('password')} required />
+        <Field label="Specialization" value={form.specialization} onChange={upd('specialization')} required />
+        <Field label="License number" value={form.licenseNumber} onChange={upd('licenseNumber')} required />
+        <Field label="Phone" value={form.phone} onChange={upd('phone')} />
+        <label className="block">
+          <span className="text-sm font-medium text-gray-700">Gender</span>
+          <select value={form.gender} onChange={upd('gender')} className="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+            <option value="">Select…</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </label>
+        <Field label="Experience" value={form.experience} onChange={upd('experience')} />
+        <Field label="Consultation fee" type="number" value={form.consultationFee} onChange={upd('consultationFee')} />
+        <div className="md:col-span-2">
+          <Field label="Short bio" value={form.bio} onChange={upd('bio')} textarea />
+        </div>
+        <div className="md:col-span-2 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancel</button>
+          <button type="submit" disabled={submitting} className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2">
+            <FaPlus /> {submitting ? 'Submitting…' : 'Register'}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 };
 

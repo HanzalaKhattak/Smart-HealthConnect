@@ -26,6 +26,9 @@ export const Get_Doctor_Reviews = '/getDoctor'; // append /:DoctorId/reviews
 export const Register_HospitalAdmin = '/registerHospitalAdmin';
 export const HospitalAdmin_Login = '/loginHospitalAdmin';
 export const Get_All_HospitalAdmins = '/getAllHospAdmins';
+export const Get_Pending_HospitalAdmins = '/pending';
+export const Approve_HospitalAdmin = '/approve';   // append /:_id
+export const Reject_HospitalAdmin = '/reject';     // append /:_id
 
 // ───── Super / System admins ─────────────────────────────
 export const Register_SuperAdin = '/registerSuperAdmin';

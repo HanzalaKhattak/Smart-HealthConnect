@@ -8,7 +8,12 @@ import {
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { API_Doctor, API_User, API_Appointment, API_HospitalAdmin } from '../../Components/apis/apisUrl';
-import { Get_All_Doctors, Get_All_Users, Get_All_Appointments, Get_All_HospitalAdmins, Approve_Doctor, Reject_Doctor } from '../../Components/apis/endpoints';
+import {
+  Get_All_Doctors, Get_All_Users, Get_All_Appointments,
+  Get_All_HospitalAdmins, Get_Pending_HospitalAdmins,
+  Approve_HospitalAdmin, Reject_HospitalAdmin,
+  Approve_Doctor, Reject_Doctor,
+} from '../../Components/apis/endpoints';
 
 const SystemAdminDashboard = () => {
   const navigate = useNavigate();
@@ -21,6 +26,7 @@ const SystemAdminDashboard = () => {
   const [patients, setPatients] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [hospitalAdmins, setHospitalAdmins] = useState([]);
+  const [pendingAdmins, setPendingAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalDoctors: 0,
@@ -68,7 +74,7 @@ const SystemAdminDashboard = () => {
       
       // Fetch all appointments
       try {
-        const appointmentsRes = await axios.get(`${API_Appointment}${Get_All_Appointments}`);
+        const appointmentsRes = await axios.get(`${API_Appointment}${Get_All_Appointments}`, { headers });
         appointmentsList = appointmentsRes.data.appointments || appointmentsRes.data || [];
         setAppointments(appointmentsList);
       } catch (err) {
@@ -77,11 +83,19 @@ const SystemAdminDashboard = () => {
       
       // Try to fetch hospital admins
       try {
-        const adminsRes = await axios.get(`${API_HospitalAdmin}${Get_All_HospitalAdmins}`);
+        const adminsRes = await axios.get(`${API_HospitalAdmin}${Get_All_HospitalAdmins}`, { headers });
         adminsList = adminsRes.data || [];
         setHospitalAdmins(adminsList);
       } catch {
         console.log('Hospital admins endpoint not available');
+      }
+
+      // Pending hospital admins awaiting super-admin approval
+      try {
+        const pendRes = await axios.get(`${API_HospitalAdmin}${Get_Pending_HospitalAdmins}`, { headers });
+        setPendingAdmins(Array.isArray(pendRes.data) ? pendRes.data : []);
+      } catch {
+        setPendingAdmins([]);
       }
       
       // Calculate today's appointments
@@ -160,6 +174,32 @@ const SystemAdminDashboard = () => {
     }
   };
 
+  const handleApproveHospitalAdmin = async (adminId) => {
+    const token = localStorage.getItem('token');
+    try {
+      await axios.put(`${API_HospitalAdmin}${Approve_HospitalAdmin}/${adminId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      await fetchAllData();
+    } catch (err) {
+      alert(err.response?.data?.msg || 'Failed to approve hospital admin');
+    }
+  };
+
+  const handleRejectHospitalAdmin = async (adminId) => {
+    const reason = window.prompt('Reason for rejection (optional):', '');
+    if (reason === null) return;
+    const token = localStorage.getItem('token');
+    try {
+      await axios.put(`${API_HospitalAdmin}${Reject_HospitalAdmin}/${adminId}`, { reason }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      await fetchAllData();
+    } catch (err) {
+      alert(err.response?.data?.msg || 'Failed to reject hospital admin');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 animate-fade-in">
       <div className="flex">
@@ -201,7 +241,7 @@ const SystemAdminDashboard = () => {
             />
             <NavItem 
               icon={<FaExclamationTriangle />} 
-              label={`Pending Approvals${stats.pendingApprovals > 0 ? ` (${stats.pendingApprovals})` : ''}`}
+              label={`Pending Approvals${(stats.pendingApprovals + pendingAdmins.length) > 0 ? ` (${stats.pendingApprovals + pendingAdmins.length})` : ''}`}
               active={activeTab === 'pending'}
               onClick={() => { setActiveTab('pending'); setSidebarOpen(false); }}
             />
@@ -264,9 +304,9 @@ const SystemAdminDashboard = () => {
                   className="relative p-3 bg-purple-50 rounded-full hover:bg-purple-100 transition-colors"
                 >
                   <FaBell className="text-purple-600 text-xl" />
-                  {stats.pendingApprovals > 0 && (
+                  {(stats.pendingApprovals + pendingAdmins.length) > 0 && (
                     <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {stats.pendingApprovals}
+                      {stats.pendingApprovals + pendingAdmins.length}
                     </span>
                   )}
                 </button>
@@ -288,7 +328,10 @@ const SystemAdminDashboard = () => {
           {activeTab === 'hospitals' && (
             <HospitalAdminsView 
               admins={hospitalAdmins}
+              pendingAdmins={pendingAdmins}
               loading={loading}
+              onApprove={handleApproveHospitalAdmin}
+              onReject={handleRejectHospitalAdmin}
             />
           )}
           {activeTab === 'doctors' && (
@@ -316,9 +359,12 @@ const SystemAdminDashboard = () => {
           {activeTab === 'pending' && (
             <PendingApprovalsView
               doctors={doctors.filter(d => d.isApproved === false)}
+              pendingAdmins={pendingAdmins}
               loading={loading}
               onApprove={handleApproveDoctor}
               onReject={handleRejectDoctor}
+              onApproveAdmin={handleApproveHospitalAdmin}
+              onRejectAdmin={handleRejectHospitalAdmin}
             />
           )}
           {activeTab === 'analytics' && (
@@ -452,51 +498,109 @@ const OverviewView = ({ stats, appointments, doctors, loading, formatDate, onNav
 );
 
 // Hospital Admins View - Dynamic
-const HospitalAdminsView = ({ admins, loading }) => (
-  <div className="bg-white p-6 rounded-xl shadow-md">
-    <div className="flex justify-between items-center mb-6">
-      <h2 className="text-2xl font-bold">Hospital Administrators</h2>
-      <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2">
-        <FaPlus /> Add Admin
-      </button>
-    </div>
-    {loading ? (
-      <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600 mx-auto"></div>
-      </div>
-    ) : admins.length > 0 ? (
-      <div className="space-y-3">
-        {admins.map((admin) => (
-          <AdminRow 
-            key={admin._id}
-            name={admin.fullName}
-            hospital={admin.hospitalName || 'N/A'}
-            role="Hospital Admin"
-            status={admin.isApproved !== false ? 'Active' : 'Pending'}
-          />
-        ))}
-      </div>
-    ) : (
-      <div className="text-center py-8">
-        <FaUserShield className="text-gray-300 text-5xl mx-auto mb-4" />
-        <p className="text-gray-500">No hospital administrators registered yet</p>
+const HospitalAdminsView = ({ admins, pendingAdmins = [], loading, onApprove, onReject }) => (
+  <div className="space-y-6">
+    {pendingAdmins.length > 0 && (
+      <div className="bg-white p-6 rounded-xl shadow-md border-2 border-yellow-300">
+        <div className="flex items-center gap-2 mb-4">
+          <FaExclamationTriangle className="text-yellow-500" />
+          <h2 className="text-xl font-bold">Pending Hospital Admins ({pendingAdmins.length})</h2>
+        </div>
+        <div className="space-y-3">
+          {pendingAdmins.map((admin) => (
+            <div key={admin._id} className="border rounded-lg p-4 flex justify-between items-center gap-3 flex-wrap">
+              <div className="min-w-0">
+                <p className="font-semibold">{admin.fullName || admin.username}</p>
+                <p className="text-sm text-gray-600">Hospital: {admin.hospitalName || admin.hospitalId?.name || 'N/A'}</p>
+                <p className="text-xs text-gray-500 truncate">{admin.email}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => onApprove && onApprove(admin._id)} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-1">
+                  <FaCheck /> Approve
+                </button>
+                <button onClick={() => onReject && onReject(admin._id)} className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">
+                  Reject
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )}
+
+    <div className="bg-white p-6 rounded-xl shadow-md">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Approved Hospital Administrators</h2>
+      </div>
+      {loading ? (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600 mx-auto"></div>
+        </div>
+      ) : admins.filter(a => a.isApproved).length > 0 ? (
+        <div className="space-y-3">
+          {admins.filter(a => a.isApproved).map((admin) => (
+            <AdminRow
+              key={admin._id}
+              name={admin.fullName}
+              hospital={admin.hospitalName || admin.hospitalId?.name || 'N/A'}
+              role="Hospital Admin"
+              status="Active"
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8">
+          <FaUserShield className="text-gray-300 text-5xl mx-auto mb-4" />
+          <p className="text-gray-500">No approved hospital administrators yet</p>
+        </div>
+      )}
+    </div>
   </div>
 );
 
 // Pending Approvals View
-const PendingApprovalsView = ({ doctors, loading, onApprove, onReject }) => (
+const PendingApprovalsView = ({ doctors, pendingAdmins = [], loading, onApprove, onReject, onApproveAdmin, onRejectAdmin }) => (
   <div className="space-y-4">
     <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
       <FaExclamationTriangle className="text-yellow-500 text-xl mt-0.5 flex-shrink-0" />
       <div>
-        <p className="font-semibold text-yellow-800">Doctor Approval Required</p>
+        <p className="font-semibold text-yellow-800">Approvals Required</p>
         <p className="text-sm text-yellow-700 mt-0.5">
-          Newly registered doctors cannot accept patient bookings until approved. Review their credentials below.
+          Doctors and hospital administrators cannot use the platform until you approve them below.
         </p>
       </div>
     </div>
+
+    {pendingAdmins.length > 0 && (
+      <div className="bg-white p-6 rounded-xl shadow-md">
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <FaUserShield className="text-purple-500" /> Pending Hospital Admins
+          <span className="ml-2 bg-purple-100 text-purple-700 text-sm font-semibold px-3 py-0.5 rounded-full">
+            {pendingAdmins.length}
+          </span>
+        </h2>
+        <div className="space-y-3">
+          {pendingAdmins.map((admin) => (
+            <div key={admin._id} className="border rounded-lg p-4 flex justify-between items-center gap-3 flex-wrap">
+              <div className="min-w-0">
+                <p className="font-semibold">{admin.fullName || admin.username}</p>
+                <p className="text-sm text-gray-600">Hospital: {admin.hospitalName || admin.hospitalId?.name || 'N/A'}</p>
+                <p className="text-xs text-gray-500 truncate">{admin.email}</p>
+                {admin.phone && <p className="text-xs text-gray-500">Phone: {admin.phone}</p>}
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => onApproveAdmin && onApproveAdmin(admin._id)} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-1">
+                  <FaCheck /> Approve
+                </button>
+                <button onClick={() => onRejectAdmin && onRejectAdmin(admin._id)} className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">
+                  Reject
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
 
     <div className="bg-white p-6 rounded-xl shadow-md">
       <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
