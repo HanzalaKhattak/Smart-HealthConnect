@@ -7,12 +7,13 @@ import {
   FaEye, FaDatabase, FaShieldAlt, FaCalendarAlt, FaBars
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { API_Doctor, API_User, API_Appointment, API_HospitalAdmin } from '../../Components/apis/apisUrl';
+import { API_Doctor, API_User, API_Appointment, API_HospitalAdmin, API_SuperAdmin } from '../../Components/apis/apisUrl';
 import {
   Get_All_Doctors, Get_All_Users, Get_All_Appointments,
   Get_All_HospitalAdmins, Get_Pending_HospitalAdmins,
   Approve_HospitalAdmin, Reject_HospitalAdmin,
   Approve_Doctor, Reject_Doctor,
+  Register_SuperAdin,
 } from '../../Components/apis/endpoints';
 
 const SystemAdminDashboard = () => {
@@ -27,6 +28,7 @@ const SystemAdminDashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [hospitalAdmins, setHospitalAdmins] = useState([]);
   const [pendingAdmins, setPendingAdmins] = useState([]);
+  const [superAdmins, setSuperAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalDoctors: 0,
@@ -96,6 +98,14 @@ const SystemAdminDashboard = () => {
         setPendingAdmins(Array.isArray(pendRes.data) ? pendRes.data : []);
       } catch {
         setPendingAdmins([]);
+      }
+
+      // Super admin roster
+      try {
+        const saRes = await axios.get(`${API_SuperAdmin}/getAllSuperAdmins`, { headers });
+        setSuperAdmins(Array.isArray(saRes.data) ? saRes.data : []);
+      } catch {
+        setSuperAdmins([]);
       }
       
       // Calculate today's appointments
@@ -197,6 +207,57 @@ const SystemAdminDashboard = () => {
       await fetchAllData();
     } catch (err) {
       alert(err.response?.data?.msg || 'Failed to reject hospital admin');
+    }
+  };
+
+  const handleUpdateProfile = async (patch) => {
+    const token = localStorage.getItem('token');
+    const myId = localStorage.getItem('userId');
+    try {
+      await axios.put(`${API_SuperAdmin}/updateSuperAdmin/${myId}`, patch, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (patch.fullName || patch.username) {
+        localStorage.setItem('username', patch.fullName || patch.username);
+        setAdminName(patch.fullName || patch.username);
+      }
+      await fetchAllData();
+      alert('Profile updated');
+    } catch (err) {
+      alert(err.response?.data?.msg || 'Failed to update profile');
+    }
+  };
+
+  const handleCreateSuperAdmin = async (payload) => {
+    const token = localStorage.getItem('token');
+    try {
+      await axios.post(`${API_SuperAdmin}${Register_SuperAdin}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      await fetchAllData();
+      alert('New system administrator created');
+      return true;
+    } catch (err) {
+      alert(err.response?.data?.msg || 'Failed to create system administrator');
+      return false;
+    }
+  };
+
+  const handleDeleteSuperAdmin = async (id) => {
+    if (!window.confirm('Delete this system administrator? This cannot be undone.')) return;
+    const myId = localStorage.getItem('userId');
+    if (String(id) === String(myId)) {
+      alert('You cannot delete your own account.');
+      return;
+    }
+    const token = localStorage.getItem('token');
+    try {
+      await axios.delete(`${API_SuperAdmin}/deleteSuperAdmin/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      await fetchAllData();
+    } catch (err) {
+      alert(err.response?.data?.msg || 'Failed to delete system administrator');
     }
   };
 
@@ -373,7 +434,14 @@ const SystemAdminDashboard = () => {
               appointments={appointments}
             />
           )}
-          {activeTab === 'settings' && <SettingsView />}
+          {activeTab === 'settings' && (
+            <SettingsView
+              superAdmins={superAdmins}
+              onUpdateProfile={handleUpdateProfile}
+              onCreate={handleCreateSuperAdmin}
+              onDelete={handleDeleteSuperAdmin}
+            />
+          )}
         </main>
       </div>
     </div>
@@ -810,31 +878,154 @@ const AnalyticsView = ({ stats, appointments }) => {
   );
 };
 
-// Settings View
-const SettingsView = () => (
-  <div className="bg-white p-6 rounded-xl shadow-md">
-    <h2 className="text-2xl font-bold mb-6">System Settings</h2>
+// Settings View — profile + super-admin roster management
+const SettingsView = ({ superAdmins = [], onUpdateProfile, onCreate, onDelete }) => {
+  const myId = localStorage.getItem('userId');
+  const me = superAdmins.find(a => String(a._id) === String(myId));
+
+  const [profile, setProfile] = useState({
+    username: me?.username || localStorage.getItem('username') || '',
+    fullName: me?.fullName || '',
+    email: me?.email || localStorage.getItem('userInfo') || '',
+    password: '',
+  });
+  useEffect(() => {
+    if (me) setProfile(p => ({ ...p, username: me.username || '', fullName: me.fullName || '', email: me.email || '' }));
+  }, [me]);
+
+  const [showAdd, setShowAdd] = useState(false);
+  const [newSA, setNewSA] = useState({ username: '', fullName: '', email: '', password: '' });
+  const [submitting, setSubmitting] = useState(false);
+
+  const upd = (k) => (e) => setProfile(p => ({ ...p, [k]: e.target.value }));
+  const updNew = (k) => (e) => setNewSA(n => ({ ...n, [k]: e.target.value }));
+
+  const submitProfile = (e) => {
+    e.preventDefault();
+    const patch = {
+      username: profile.username, fullName: profile.fullName, email: profile.email,
+    };
+    if (profile.password) patch.password = profile.password;
+    onUpdateProfile(patch);
+    setProfile(p => ({ ...p, password: '' }));
+  };
+
+  const submitNewSA = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    const ok = await onCreate(newSA);
+    setSubmitting(false);
+    if (ok) {
+      setNewSA({ username: '', fullName: '', email: '', password: '' });
+      setShowAdd(false);
+    }
+  };
+
+  return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold mb-3">General Settings</h3>
+      <div className="bg-white p-6 rounded-xl shadow-md">
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <FaUserShield className="text-purple-600" /> My Profile
+        </h2>
+        <form onSubmit={submitProfile} className="grid md:grid-cols-2 gap-4">
+          <label className="block">
+            <span className="text-sm font-medium text-gray-700">Username</span>
+            <input value={profile.username} onChange={upd('username')} required className="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-gray-700">Full Name</span>
+            <input value={profile.fullName} onChange={upd('fullName')} className="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-gray-700">Email</span>
+            <input type="email" value={profile.email} onChange={upd('email')} required className="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-gray-700">New Password <span className="text-gray-400 font-normal">(leave blank to keep current)</span></span>
+            <input type="password" value={profile.password} onChange={upd('password')} className="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+          </label>
+          <div className="md:col-span-2 flex justify-end">
+            <button type="submit" className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2">
+              <FaCheck /> Save Profile
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="bg-white p-6 rounded-xl shadow-md">
+        <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <FaShieldAlt className="text-purple-600" /> System Administrators ({superAdmins.length})
+          </h2>
+          <button onClick={() => setShowAdd(s => !s)} className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2">
+            <FaPlus /> {showAdd ? 'Cancel' : 'Add Administrator'}
+          </button>
+        </div>
+
+        {showAdd && (
+          <form onSubmit={submitNewSA} className="grid md:grid-cols-2 gap-4 mb-6 p-4 bg-purple-50 rounded-lg">
+            <label className="block">
+              <span className="text-sm font-medium text-gray-700">Username</span>
+              <input value={newSA.username} onChange={updNew('username')} required className="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium text-gray-700">Full Name</span>
+              <input value={newSA.fullName} onChange={updNew('fullName')} className="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium text-gray-700">Email</span>
+              <input type="email" value={newSA.email} onChange={updNew('email')} required className="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium text-gray-700">Password</span>
+              <input type="password" value={newSA.password} onChange={updNew('password')} required minLength={8} className="mt-1 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+            </label>
+            <div className="md:col-span-2 flex justify-end gap-2">
+              <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancel</button>
+              <button type="submit" disabled={submitting} className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
+                <FaPlus /> {submitting ? 'Creating…' : 'Create Administrator'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {superAdmins.length > 0 ? (
+          <div className="space-y-3">
+            {superAdmins.map(sa => (
+              <div key={sa._id} className="border rounded-lg p-4 flex justify-between items-center gap-3 flex-wrap">
+                <div className="min-w-0">
+                  <p className="font-semibold">{sa.fullName || sa.username}</p>
+                  <p className="text-sm text-gray-600 truncate">{sa.email}</p>
+                  {String(sa._id) === String(myId) && (
+                    <span className="inline-block mt-1 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">This is you</span>
+                  )}
+                </div>
+                {String(sa._id) !== String(myId) && (
+                  <button onClick={() => onDelete(sa._id)} className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200" title="Delete">
+                    <FaTrash />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-6">No other system administrators.</p>
+        )}
+      </div>
+
+      <div className="bg-white p-6 rounded-xl shadow-md">
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <FaCog className="text-gray-600" /> Platform Info
+        </h2>
         <div className="space-y-2">
           <SettingItem label="Platform Name" value="Smart HealthConnect" />
           <SettingItem label="System Version" value="2.1.0" />
-          <SettingItem label="Last Update" value={new Date().toLocaleDateString()} />
+          <SettingItem label="Environment" value={import.meta.env.MODE || 'production'} />
         </div>
       </div>
-      <div>
-        <h3 className="text-lg font-semibold mb-3">Security Settings</h3>
-        <div className="space-y-2">
-          <SettingItem label="Two-Factor Authentication" value="Enabled" />
-          <SettingItem label="Session Timeout" value="30 minutes" />
-          <SettingItem label="Password Policy" value="Strong" />
-        </div>
-      </div>
-      <button className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700">Save Changes</button>
     </div>
-  </div>
-);
+  );
+};
 
 // Component Definitions
 const StatCard = ({ icon, title, count, trend, color }) => {

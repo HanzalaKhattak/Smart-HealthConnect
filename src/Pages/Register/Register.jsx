@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { FaUser, FaUserMd, FaHospital, FaTools, FaSpinner, FaArrowLeft, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { API_User, API_Doctor, API_HospitalAdmin, API_SuperAdmin } from '../../Components/apis/apisUrl';
-import { Add_User, Register_Doctor, Register_HospitalAdmin, Register_SuperAdin } from '../../Components/apis/endpoints';
+import { FaUser, FaUserMd, FaHospital, FaSpinner, FaArrowLeft, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { API_User, API_Doctor, API_HospitalAdmin } from '../../Components/apis/apisUrl';
+import { Add_User, Register_Doctor, Register_HospitalAdmin } from '../../Components/apis/endpoints';
 import Toast from '../../Components/Toast/Toast';
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
@@ -40,8 +40,6 @@ const RegisterForm = () => {
       url = API_Doctor + Register_Doctor;
     }else if(userType === 'hospitalAdmin'){
       url = API_HospitalAdmin + Register_HospitalAdmin;
-    }else if(userType === 'systemAdmin'){
-      url = API_SuperAdmin + Register_SuperAdin;
     }else {
       url = API_User + Add_User;
     }
@@ -154,19 +152,6 @@ const RegisterForm = () => {
             />
           </>
         );
-      case 'systemAdmin':
-        return (
-          <>
-            <input
-              type="text"
-              name="adminCode"
-              placeholder="System Admin Code"
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              required
-            />
-          </>
-        );
       default:
         return null;
     }
@@ -195,11 +180,11 @@ const RegisterForm = () => {
         {/* User Type Selection */}
         <div className="mb-6">
           <p className="text-sm font-medium text-gray-700 mb-3">I want to register as:</p>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
             <button
               type="button"
               onClick={() => setUserType('patient')}
-              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 transition-all duration-200 ${
+              className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl border-2 transition-all duration-200 text-sm sm:text-base ${
                 userType === 'patient'
                   ? 'bg-green-600 text-white border-green-600 shadow-lg scale-105'
                   : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-green-400 hover:bg-green-50'
@@ -211,7 +196,7 @@ const RegisterForm = () => {
             <button
               type="button"
               onClick={() => setUserType('doctor')}
-              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 transition-all duration-200 ${
+              className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl border-2 transition-all duration-200 text-sm sm:text-base ${
                 userType === 'doctor'
                   ? 'bg-green-600 text-white border-green-600 shadow-lg scale-105'
                   : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-green-400 hover:bg-green-50'
@@ -223,25 +208,13 @@ const RegisterForm = () => {
             <button
               type="button"
               onClick={() => setUserType('hospitalAdmin')}
-              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 transition-all duration-200 ${
+              className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl border-2 transition-all duration-200 text-sm sm:text-base ${
                 userType === 'hospitalAdmin'
                   ? 'bg-green-600 text-white border-green-600 shadow-lg scale-105'
                   : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-green-400 hover:bg-green-50'
               }`}
             >
               <FaHospital /> Hospital Admin
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setUserType('systemAdmin')}
-              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 transition-all duration-200 ${
-                userType === 'systemAdmin'
-                  ? 'bg-green-600 text-white border-green-600 shadow-lg scale-105'
-                  : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-green-400 hover:bg-green-50'
-              }`}
-            >
-              <FaTools /> System Admin
             </button>
           </div>
         </div>
