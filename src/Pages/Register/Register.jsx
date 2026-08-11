@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { FaUser, FaUserMd, FaHospital, FaSpinner, FaArrowLeft, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { API_User, API_Doctor, API_HospitalAdmin } from '../../Components/apis/apisUrl';
+import React, { useState, useEffect, useRef } from 'react';
+import { FaUser, FaUserMd, FaHospital, FaSpinner, FaArrowLeft, FaEye, FaEyeSlash, FaSearch, FaTimes } from 'react-icons/fa';
+import { API_User, API_Doctor, API_HospitalAdmin, API_Hospital } from '../../Components/apis/apisUrl';
 import { Add_User, Register_Doctor, Register_HospitalAdmin } from '../../Components/apis/endpoints';
 import Toast from '../../Components/Toast/Toast';
 import axios from "axios";
@@ -13,6 +13,28 @@ const RegisterForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Hospital search state (used for doctor registration)
+  const [hospitalQuery, setHospitalQuery] = useState('');
+  const [hospitalResults, setHospitalResults] = useState([]);
+  const [selectedHospital, setSelectedHospital] = useState(null);
+  const [hospitalSearching, setHospitalSearching] = useState(false);
+  const searchRef = useRef(null);
+
+  useEffect(() => {
+    if (userType !== 'doctor') return;
+    if (!hospitalQuery.trim()) { setHospitalResults([]); return; }
+    const t = setTimeout(async () => {
+      setHospitalSearching(true);
+      try {
+        const res = await axios.get(`${API_Hospital}?name=${encodeURIComponent(hospitalQuery)}`);
+        const list = Array.isArray(res.data) ? res.data : (res.data.hospitals || []);
+        setHospitalResults(list.slice(0, 6));
+      } catch { setHospitalResults([]); }
+      finally { setHospitalSearching(false); }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [hospitalQuery, userType]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -33,7 +55,11 @@ const RegisterForm = () => {
     setIsLoading(true);
     console.log('Registration data:', {...formData });
     const newUserData = { userType, ...formData };
-    console.log("newUser", newUserData)
+    // Attach selected hospital for doctors
+    if (userType === 'doctor' && selectedHospital) {
+      newUserData.hospitalId = selectedHospital._id;
+      newUserData.hospitalName = selectedHospital.name;
+    }
     let url = '';
 
     if(userType === 'doctor'){
@@ -116,7 +142,7 @@ const RegisterForm = () => {
             <input
               type="text"
               name="specialization"
-              placeholder="Specialization"
+              placeholder="Specialization (e.g. Cardiologist)"
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               required
@@ -129,6 +155,51 @@ const RegisterForm = () => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               required
             />
+            {/* Hospital search — optional but links doctor to hospital admin panel */}
+            <div className="relative" ref={searchRef}>
+              <label className="block text-xs text-gray-500 mb-1">Hospital (optional — links you to that hospital's admin)</label>
+              {selectedHospital ? (
+                <div className="flex items-center gap-2 px-4 py-2 border border-green-500 rounded-lg bg-green-50">
+                  <FaHospital className="text-green-600 flex-shrink-0" />
+                  <span className="text-green-800 font-medium flex-1 text-sm">{selectedHospital.name}</span>
+                  <button type="button" onClick={() => { setSelectedHospital(null); setHospitalQuery(''); }}
+                    className="text-gray-400 hover:text-red-500">
+                    <FaTimes size={14} />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="relative">
+                    <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      value={hospitalQuery}
+                      onChange={e => setHospitalQuery(e.target.value)}
+                      placeholder="Search hospital by name (e.g. HMC, Shifa, Aga Khan)"
+                      className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                    {hospitalSearching && <FaSpinner className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 animate-spin" />}
+                  </div>
+                  {hospitalResults.length > 0 && (
+                    <ul className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {hospitalResults.map(h => (
+                        <li key={h._id}>
+                          <button type="button"
+                            onClick={() => { setSelectedHospital(h); setHospitalQuery(''); setHospitalResults([]); }}
+                            className="w-full text-left px-4 py-2 hover:bg-green-50 text-sm">
+                            <span className="font-medium">{h.name}</span>
+                            {h.address?.city && <span className="text-gray-500 ml-2 text-xs">{h.address.city}</span>}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {hospitalQuery.trim() && !hospitalSearching && hospitalResults.length === 0 && (
+                    <p className="text-xs text-gray-500 mt-1">No hospitals found. You can still register without selecting one.</p>
+                  )}
+                </>
+              )}
+            </div>
           </>
         );
       case 'hospitalAdmin':
