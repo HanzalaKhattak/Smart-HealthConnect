@@ -44,7 +44,7 @@ const Home = () => {
       icon: <FaUserMd className="text-4xl" />,
       title: "Find Doctors",
       description: "Connect with specialist doctors for consultations",
-      path: "/specializations"
+      path: "/find-doctors"
     },
     {
       icon: <FaRobot className="text-4xl" />,
@@ -56,19 +56,19 @@ const Home = () => {
       icon: <FaHospital className="text-4xl" />,
       title: "Nearby Hospitals",
       description: "Locate hospitals and medical facilities near you",
-      path: "/hospital-near-you"
+      path: "/find-hospitals"
     },
     {
       icon: <FaPills className="text-4xl" />,
       title: "Pharmacy Finder",
       description: "Find pharmacies and medical supplies",
-      path: "/pharmas"
+      path: "/find-pharmacies"
     },
     {
       icon: <FaCalendarCheck className="text-4xl" />,
       title: "Book Appointments",
       description: "Schedule medical appointments online",
-      path: "/appointment"
+      path: "/book-appointment"
     },
     {
       icon: <FaQuestionCircle className="text-4xl" />,
