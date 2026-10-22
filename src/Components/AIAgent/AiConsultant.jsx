@@ -4,6 +4,7 @@ import api from '../../api/axios';
 import { API_AI } from '../apis/apisUrl';
 import { AI_Consult, AI_Feedback } from '../apis/endpoints';
 import { useAuth } from '../../context/AuthContext';
+import FormattedMessage from './FormattedMessage';
 
 /**
  * AI Medical Consultation UI backed by the server-side RAG pipeline
@@ -141,8 +142,8 @@ const AiConsultant = () => {
       <div ref={scrollRef} className="flex-1 overflow-y-auto bg-gray-100 p-3 sm:p-4 rounded mb-2">
         {chat.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} mb-3`}>
-            <div className={`max-w-[85%] sm:max-w-md px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base whitespace-pre-wrap ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-green-100 text-gray-800'}`}>
-              {msg.content}
+            <div className={`max-w-[85%] sm:max-w-md px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base ${msg.role === 'user' ? 'bg-blue-500 text-white whitespace-pre-wrap' : 'bg-green-100 text-gray-800'}`}>
+              {msg.role === 'model' ? <FormattedMessage content={msg.content} /> : msg.content}
 
               {msg.role === 'model' && msg.sources?.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-green-200 text-xs text-gray-600">
